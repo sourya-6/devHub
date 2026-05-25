@@ -8,12 +8,13 @@ import { createNotification } from "../utils/notifications.js";
 import { log } from "node:console"
 // import { log } from "node:console"
 
-const getParamValue = (value: string | string[] | undefined) => {
+const getParamValue = (value: unknown): string | undefined => {
     if (Array.isArray(value)) {
-        return value[0];
+        const first = value[0];
+        return typeof first === 'string' ? first : undefined;
     }
 
-    return value;
+    return typeof value === 'string' ? value : undefined;
 }
 
 const createProject = async(req:AuthRequest,
@@ -65,15 +66,21 @@ const getAllProjects = async(req:AuthRequest,
         const search = getParamValue(req.query.search);
         const normalizedSearch = typeof search === 'string' ? search.trim() : undefined;
 
-        const query = normalizedSearch ? {
-            $or: [
-                { title: { $regex: escapeRegExp(normalizedSearch), $options: 'i' } },
-                { description: { $regex: escapeRegExp(normalizedSearch), $options: 'i' } },
-                { liveLink: { $regex: escapeRegExp(normalizedSearch), $options: 'i' } },
-                { gitHubLink: { $regex: escapeRegExp(normalizedSearch), $options: 'i' } },
-                { tags: { $regex: escapeRegExp(normalizedSearch), $options: 'i' } },
-            ]
-        } : {};
+        // build a RegExp object once and use it in the $or clauses
+        let query: Record<string, unknown> = {};
+        if (normalizedSearch) {
+            const regex = new RegExp(escapeRegExp(normalizedSearch), 'i');
+            const orClauses: Record<string, unknown>[] = [
+                { title: regex },
+                { description: regex },
+                { liveLink: regex },
+                { gitHubLink: regex },
+                // tags is an array of strings; use $in with a regex to match any element
+                { tags: { $in: [regex] } },
+            ];
+
+            query = { $or: orClauses };
+        }
 
         const projects = await Project.find(query)
         .populate("owner", "name username avatar")

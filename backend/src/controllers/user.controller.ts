@@ -90,7 +90,7 @@ const registerUser = async(req:Request<{},{},RegisterBody>, res:Response):Promis
     name = name.trim();
     const existingUser = await User.findOne({
         $or:[{email},{username}],
-    })
+    } as any)
 
     if(existingUser){
         return res.status(400).json({
@@ -145,7 +145,7 @@ const loginUser = async(req:Request<{},{},LoginBody>,res:Response):Promise<Respo
         
         const user = await User.findOne({
             $or: [{ email }, { username }]
-        }).select("+password")
+        } as any).select("+password")
         if(!user){
             return res.status(401).json({
                 message:"Invalid Credentials"
