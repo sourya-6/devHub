@@ -478,6 +478,7 @@ const replyComment = async(req:AuthRequest,res:Response):Promise<Response> =>{
             text,
             createdAt:new Date()
         })
+        const createdReply = comment.replies[comment.replies.length - 1];
 
         await project.save();
         const updatedProject = await Project.findById(project._id)
@@ -502,14 +503,17 @@ const replyComment = async(req:AuthRequest,res:Response):Promise<Response> =>{
             });
         }
 
-                void createNotification({
-          userId: project.owner,
-          actorId: req.user._id,
-          projectId: project._id,
-          type: 'reply',
-          message: `${req.user.name} replied on your project "${project.title}"`,
-          commentId,
-                }).catch((error) => console.error('Failed to create reply notification', error));
+        if (comment.user) {
+            void createNotification({
+                userId: comment.user,
+                actorId: req.user._id,
+                projectId: project._id,
+                type: 'reply',
+                message: `${req.user.name} replied to your comment on "${project.title}"`,
+                commentId,
+                replyId: createdReply?._id ?? null,
+            }).catch((error) => console.error('Failed to create reply notification', error));
+        }
         return res.status(201).json({
             message:"Reply Added",
             comment
