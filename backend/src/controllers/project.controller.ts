@@ -3,6 +3,7 @@ import type { AuthRequest } from "../middlewares/auth.middleware.js"
 import { Project } from "../models/project.model.js"
 import { uploadToCloudinary } from "../utils/cloudinary.js"
 import mongoose from "mongoose"
+import jwt from "jsonwebtoken"
 import { publish, subscribe } from "../sse/sse.js";
 import { createNotification } from "../utils/notifications.js";
 import { log } from "node:console"
@@ -15,6 +16,26 @@ const getParamValue = (value: unknown): string | undefined => {
     }
 
     return typeof value === 'string' ? value : undefined;
+}
+
+const getOptionalUserId = (req: Request) => {
+    const authorization = req.headers.authorization;
+
+    if (!authorization?.startsWith('Bearer ')) {
+        return undefined;
+    }
+
+    const token = authorization.split(' ')[1];
+    if (!token) {
+        return undefined;
+    }
+
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { id?: string };
+        return decoded.id;
+    } catch {
+        return undefined;
+    }
 }
 
 const createProject = async(req:AuthRequest,
@@ -43,6 +64,7 @@ const createProject = async(req:AuthRequest,
             gitHubLink,
             tags: tags?tags.split(",").map((t:string)=>t.trim()):[],
             owner:req.user._id,
+            likeCount: 0,
         })
 
         res.status(201).json({
@@ -115,15 +137,26 @@ const getProjectById = async(req:AuthRequest,
         .populate("comments.user", "name username avatar")
         .populate("comments.replies.user","name username avatar")
 
-        console.log(project);
-        
         if(!project){
             return res.status(404).json({
                 message: "Project Not Found!!"
             })
         }
+
+        const currentUserId = getOptionalUserId(req);
+        const projectObject = project.toObject() as any;
+        const likes = Array.isArray(projectObject.likes) ? projectObject.likes : [];
+        const likeCount = likes.length;
+        const likedByMe = currentUserId
+            ? likes.some((id: any) => id.toString() === currentUserId)
+            : false;
+
         res.status(200).json({
-            project,
+            project: {
+                ...projectObject,
+                likedByMe,
+                likeCount,
+            },
         })
 
     } catch (error) {
@@ -167,46 +200,53 @@ const streamProjectEvents = (req: Request, res: Response) => {
 const toogleLikeProject = async(req:AuthRequest,res:Response):Promise<Response>=>{
     try {
         const id = getParamValue(req.params.id);
-    const userId = req.user._id;
+        const userId = req.user._id;
 
-    if(!id || !mongoose.Types.ObjectId.isValid(id)){
-        return res.status(400).json({
-            message:"Invalid Project Id"
+        if(!id || !mongoose.Types.ObjectId.isValid(id)){
+            return res.status(400).json({
+                message:"Invalid Project Id"
+            })
+        }
+
+        const project = await Project.findById(id);
+
+        if(!project){
+            return res.status(404).json({
+                message:"Project not Found!!"
+            })
+        }
+
+        const likes = Array.isArray(project.likes) ? project.likes : [];
+        const isAlreadyLiked = likes.some(id => id.toString() === userId.toString());
+
+        let likedByMe = false;
+
+        if(isAlreadyLiked){
+            // Remove like
+            project.likes = likes.filter(id => id.toString() !== userId.toString());
+            likedByMe = false;
+        }else{
+            // Add like
+            project.likes.push(userId);
+            likedByMe = true;
+        }
+
+        project.likeCount = project.likes.length;
+        await project.save();
+
+        publish(`project:${id}`, {
+            event: "project:likes-updated",
+            data: {
+                projectId: id,
+                likeCount: project.likeCount,
+            },
+        });
+
+        return res.status(200).json({
+            message: likedByMe ? "Liked Project":"Unliked Project",
+            likeCount: project.likeCount,
+            likedByMe,
         })
-    }
-
-    const project = await Project.findById(id);
-
-    if(!project){
-        return res.status(404).json({
-            message:"Project not Found!!"
-        })
-    }
-
-    const isLiked = project.likes.some((like) => like.toString() === userId.toString());
-
-    if(isLiked){
-        project.likes = project.likes.filter((like) => like.toString() !== userId.toString());
-    }else{
-        project.likes.push(userId);
-    }
-
-    await project.save();
-    publish(`project:${id}`, {
-        event: "project:likes-updated",
-        data: {
-            projectId: id,
-            likes: project.likes,
-            totalLikes: project.likes.length,
-        },
-    });
-    return res.status(200).json({
-        message: isLiked ? "Unliked Project":"Liked Project",
-        totalLikes: project.likes.length,
-        isLiked:!isLiked,
-        likes: project.likes
-    })
-
 
     } catch (error) {
         return res.status(500).json({

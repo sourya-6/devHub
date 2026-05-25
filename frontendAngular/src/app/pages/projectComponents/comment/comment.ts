@@ -18,7 +18,6 @@ import { FormsModule } from '@angular/forms';
 export class Comment implements OnInit, OnDestroy {
   project!:projectTemplate
   likeCount: number = 0;
-  isLiked: boolean = false;
   currentUserId: string = '';
   comments = signal<ProjectComment[]>([]);
   commentCount = computed(() => this.comments().length);
@@ -44,17 +43,12 @@ export class Comment implements OnInit, OnDestroy {
     const projectData = this.route.snapshot.data['projectData'];
     this.project = projectData;
     this.comments.set(this.project.comments ?? []);
-    this.likeCount = this.project.likes?.length || 0;
+    this.likeCount = this.project.likeCount || 0;
     
     
     this.currentUserId = localStorage.getItem('userId') || '';
     
   
-    if (this.project.likes && this.currentUserId) {
-      this.isLiked = this.project.likes.includes(this.currentUserId);
-    }
-    
-    
     this.setupSocket(); 
     
     console.log(this.project);
@@ -94,9 +88,8 @@ export class Comment implements OnInit, OnDestroy {
 
     this.socketService.onLikesUpdated((data: any) => {
       if (data.projectId === this.project._id) {
-        this.project.likes = [...(data.likes || this.project.likes || [])];
-        this.likeCount = typeof data.totalLikes === 'number' ? data.totalLikes : this.project.likes.length;
-        this.isLiked = this.project.likes.some((like: any) => like?.toString?.() === this.currentUserId || like === this.currentUserId);
+        this.likeCount = typeof data.likeCount === 'number' ? data.likeCount : this.likeCount;
+        this.project.likeCount = this.likeCount;
       }
     });
   }

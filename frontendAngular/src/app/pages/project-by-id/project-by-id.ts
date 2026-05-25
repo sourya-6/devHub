@@ -20,9 +20,10 @@ import { SocketService } from '../../services/socket';
 export class ProjectById {
   project!: projectTemplate
   likeCount: number = 0;
-  isLiked: boolean = false;
   currentUserId: string = '';
   private sseConnected = false;
+  private lastLikeClickAt = 0;
+  private likeRequestInFlight = false;
 
   constructor(
     private route: ActivatedRoute,
@@ -34,23 +35,12 @@ export class ProjectById {
   ngOnInit() {
     const projectData = this.route.snapshot.data['projectData'];
     this.project = projectData;
-    this.likeCount = this.project.likes?.length || 0;
+    this.likeCount = this.project.likeCount || 0;
 
     // Get current user ID from localStorage (should be stored during login)
     this.currentUserId = localStorage.getItem('userId') || '';
 
     // Check if current user has already liked this project
-    if (this.project.likes && this.currentUserId) {
-      this.isLiked = this.project.likes.some((like: any) => {
-
-        if (typeof like === 'string') {
-          return like === this.currentUserId;
-        }
-
-        return like._id === this.currentUserId;
-      });
-    }
-
     this.setupSocket();
 
     console.log(this.project);
@@ -70,14 +60,25 @@ export class ProjectById {
     this.sseConnected = true;
     this.socketService.onLikesUpdated((data: any) => {
       if (data.projectId === this.project._id) {
-        this.project.likes = data.likes || [];
-        this.likeCount = typeof data.totalLikes === 'number' ? data.totalLikes : this.project.likes.length;
-        this.isLiked = this.project.likes.some((like: any) => like?.toString?.() === this.currentUserId || like === this.currentUserId);
+        this.likeCount = typeof data.likeCount === 'number' ? data.likeCount : this.likeCount;
+        this.project.likeCount = this.likeCount;
       }
     });
   }
 
   toggleLike() {
+    const now = Date.now();
+    // Ignore rapid repeat taps/clicks within 400ms.
+    if (now - this.lastLikeClickAt < 400) {
+      return;
+    }
+    this.lastLikeClickAt = now;
+
+    // Prevent overlapping toggle requests.
+    if (this.likeRequestInFlight) {
+      return;
+    }
+
     console.log('Toggle like clicked');
 
     const token = localStorage.getItem('token');
@@ -93,37 +94,38 @@ export class ProjectById {
       return;
     }
 
-    // Optimistic update: toggle like immediately
-    const wasLiked = this.isLiked;
-    const previousLikeCount = this.likeCount;
-    const previousLikes = [...this.project.likes];
-
-    if (this.isLiked) {
-      this.project.likes = this.project.likes.filter(like => like?.toString?.() !== this.currentUserId && like !== this.currentUserId);
-      this.likeCount--;
-    } else {
-      this.project.likes.push(this.currentUserId);
-      this.likeCount++;
-    }
-    this.isLiked = !this.isLiked;
+    this.likeRequestInFlight = true;
 
     this.projectService.toggleLike(projectId).subscribe({
       next: (response: any) => {
         console.log('Like toggled:', response);
-        // Confirm from server (already updated optimistically)
+
+        if (typeof response?.likeCount === 'number') {
+          this.likeCount = response.likeCount;
+          this.project.likeCount = response.likeCount;
+        } else {
+          this.likeCount = this.project.likeCount || 0;
+        }
+
+        if (typeof response?.likedByMe === 'boolean') {
+          this.project.likedByMe = response.likedByMe;
+        }
+
+        this.likeRequestInFlight = false;
       },
       error: (error) => {
         console.error('Error toggling like:', error);
-        // Revert optimistic update on error
-        this.isLiked = wasLiked;
-        this.likeCount = previousLikeCount;
-        this.project.likes = previousLikes;
+        this.likeRequestInFlight = false;
       }
     });
   }
 
   setupLoginRedirect() {
     this.router.navigate(['/']);
+  }
+
+  get isLiked(): boolean {
+    return !!this.project?.likedByMe;
   }
 
 

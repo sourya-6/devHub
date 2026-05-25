@@ -21,6 +21,8 @@ export const protectRoute = async(
             token = req.headers.authorization.split(" ")[1];
         }else if(req.cookies?.token){
             token = req.cookies.token;
+        }else if(req.query?.token){
+            token = Array.isArray(req.query.token) ? req.query.token[0] : req.query.token;
         }
 
         if(!token){

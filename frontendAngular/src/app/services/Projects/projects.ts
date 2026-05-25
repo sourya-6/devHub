@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
-import { addProjectTemplate, realProjectTemplate } from './projectTemplate';
+import { addProjectTemplate, projectTemplate, realProjectTemplate } from './projectTemplate';
 import { environment } from '../../../environments/environment';
 
 @Injectable({
@@ -46,8 +46,11 @@ export class Projects {
     });
   }
 
-  getProjectById(id:Number):Observable<{project:realProjectTemplate}>{
-  return this.http.get<{project: realProjectTemplate}>(`${this.url}/project/${id}`)
+  getProjectById(id:Number):Observable<{project:projectTemplate}>{
+    const token = localStorage.getItem("token");
+    return this.http.get<{project: projectTemplate}>(`${this.url}/project/${id}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined
+    })
   }
 
   toggleLike(id:string){

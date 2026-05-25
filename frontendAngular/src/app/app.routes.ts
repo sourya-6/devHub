@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { LoginPage } from './pages/login-page/login-page';
 import { ProjectById } from './pages/project-by-id/project-by-id';
+import { AllProjects } from './pages/all-projects/all-projects';
 import { authGuard } from './guards/auth.guard';
 import { projectResolver } from './resolvers/project-resolver/project-resolver-resolver';
 import { projectByIdResolver } from './resolvers/projectById/project-by-id-resolver';
@@ -17,8 +18,7 @@ export const routes: Routes = [
   { path: 'dashbord', pathMatch: 'full', redirectTo: 'dashboard' },
   {
     path: 'dashboard',
-    loadComponent: () =>
-      import('./pages/all-projects/all-projects').then((m) => m.AllProjects),
+    component: AllProjects,
     resolve: { projectsData: projectResolver },
     canActivate: [authGuard],
   },

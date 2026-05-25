@@ -97,7 +97,8 @@ export class NotificationService {
     this.connectedUserId = userId;
     this.refreshNotifications();
 
-    this.eventSource = new EventSource(`${this.baseUrl}/notifications/stream`, {
+    // Pass token as query parameter since EventSource doesn't support custom headers
+    this.eventSource = new EventSource(`${this.baseUrl}/notifications/stream?token=${encodeURIComponent(token)}`, {
       withCredentials: true,
     });
 

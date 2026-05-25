@@ -7,6 +7,9 @@ import { firstValueFrom } from 'rxjs';
 interface GoogleAuthResponse {
   token?: string;
   success?: boolean;
+  user?: {
+    _id?: string;
+  };
 }
 
 @Injectable({
@@ -60,6 +63,10 @@ export class AuthService {
 
     if (response.token) {
       localStorage.setItem('token', response.token);
+    }
+
+    if (response.user?._id) {
+      localStorage.setItem('userId', response.user._id);
     }
 
     return response;

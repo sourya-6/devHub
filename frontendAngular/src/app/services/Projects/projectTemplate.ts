@@ -7,7 +7,9 @@ export interface projectTemplate{
     gitHubLink?:string,
     tags?:string[],
     owner:string,
-    likes:string[],
+    likes?: string[],
+    likeCount?: number,
+    likedByMe?: boolean,
     comments:Comment[]
 }
 

@@ -29,10 +29,10 @@ export class AllProjects implements OnInit {
   constructor(private route:ActivatedRoute) {}
 
   ngOnInit()  {
-  const data:realProjectTemplate = this.route.snapshot.data['projectsData'];
-  console.log(data);
-  
-  this.projects = data.projects;
+    const data:realProjectTemplate = this.route.snapshot.data['projectsData'];
+    console.log(data);
+    
+    this.projects = data.projects;
     this.loading = false
   }
 
