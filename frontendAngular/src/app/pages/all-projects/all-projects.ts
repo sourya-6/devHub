@@ -1,9 +1,10 @@
 
 
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ScrollingModule } from '@angular/cdk/scrolling';
 
 import {
   projectTemplate,
@@ -13,7 +14,7 @@ import {
 @Component({
   selector: 'app-all-projects',
   standalone:true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink, ScrollingModule],
   templateUrl: './all-projects.html',
   styleUrl: './all-projects.css',
 })
@@ -23,6 +24,7 @@ export class AllProjects implements OnInit {
   searchQuery = '';
 
   loading:boolean = true;
+  itemsPerRow = 3;
 
   constructor(private route:ActivatedRoute) {}
 
@@ -42,6 +44,16 @@ export class AllProjects implements OnInit {
     }
 
     return this.projects.filter((project) => this.matchesSearchQuery(project, query));
+  }
+
+  // Group filtered projects into rows for virtual scrolling
+  get projectRows(): projectTemplate[][] {
+    const filtered = this.filteredProjects;
+    const rows: projectTemplate[][] = [];
+    for (let i = 0; i < filtered.length; i += this.itemsPerRow) {
+      rows.push(filtered.slice(i, i + this.itemsPerRow));
+    }
+    return rows;
   }
 
   private matchesSearchQuery(project: projectTemplate, query: string): boolean {

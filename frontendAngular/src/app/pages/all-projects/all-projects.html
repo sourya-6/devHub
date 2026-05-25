@@ -53,31 +53,33 @@
       }
 
       @else {
-        <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <cdk-virtual-scroll-viewport itemSize="350" class="h-[calc(100vh-300px)] border border-gray-200 rounded-2xl">
+          <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            <div *cdkVirtualFor="let row of projectRows">
+              <div
+                *ngFor="let project of row"
+                class="bg-white rounded-2xl shadow-md hover:shadow-2xl transition-all duration-300 p-6 border border-gray-200 hover:-translate-y-1"
+              >
 
-          <div
-            *ngFor="let project of filteredProjects"
-            class="bg-white rounded-2xl shadow-md hover:shadow-2xl transition-all duration-300 p-6 border border-gray-200 hover:-translate-y-1"
-          >
+                <h2 class="text-2xl font-bold text-gray-800 mb-3">
+                  {{ project.title }}
+                </h2>
 
-            <h2 class="text-2xl font-bold text-gray-800 mb-3">
-              {{ project.title }}
-            </h2>
+                <p class="text-gray-600 line-clamp-3 mb-5">
+                  {{ project.description }}
+                </p>
 
-            <p class="text-gray-600 line-clamp-3 mb-5">
-              {{ project.description }}
-            </p>
+                <a
+                  [routerLink]="['/project', project._id]"
+                  class="inline-block bg-black text-white px-5 py-2 rounded-xl hover:bg-gray-800 transition-all duration-300"
+                >
+                  View Project
+                </a>
 
-            <a
-              [routerLink]="['/project', project._id]"
-              class="inline-block bg-black text-white px-5 py-2 rounded-xl hover:bg-gray-800 transition-all duration-300"
-            >
-              View Project
-            </a>
-
+              </div>
+            </div>
           </div>
-
-        </div>
+        </cdk-virtual-scroll-viewport>
       }
 
     </div>
