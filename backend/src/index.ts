@@ -26,6 +26,12 @@ app.use("/project",projectRouter)
 app.use("/notifications", notificationRouter)
 const PORT = process.env.PORT || 3000
 
-app.listen(PORT,()=>{
-    console.log(`Server running at: http://localhost:${PORT}`)
-})
+// Vercel runs this file as a serverless function, so do not start a listener there.
+// Keep the local dev experience working with `npm run dev`.
+if (!process.env.VERCEL) {
+  app.listen(PORT,()=>{
+      console.log(`Server running at: http://localhost:${PORT}`)
+  })
+}
+
+export default app;
