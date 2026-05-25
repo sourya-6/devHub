@@ -2,6 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { User } from '../login/user';
+import { environment } from '../../../environments/environment';
 
 export interface RegisterTemplate {
   name: string;
@@ -19,10 +20,11 @@ export interface RegisterResponse {
   providedIn: 'root',
 })
 export class Register {
+  private readonly baseUrl = environment.backendUrl;
   constructor(private http: HttpClient) { }
 
   registerUser(userData: RegisterTemplate): Observable<RegisterResponse> {
-    const res: Observable<RegisterResponse> = this.http.post<RegisterResponse>("http://localhost:3000/auth/register", userData)
+    const res: Observable<RegisterResponse> = this.http.post<RegisterResponse>(`${this.baseUrl}/auth/register`, userData)
     res.subscribe((item) => {
       localStorage.setItem("token", item.token);
       localStorage.setItem("userId", item.user._id);

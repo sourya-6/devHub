@@ -1,6 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, NgZone, computed, signal } from '@angular/core';
 import { Observable } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 export interface AppNotification {
   _id: string;
@@ -33,7 +34,7 @@ interface NotificationsResponse {
   providedIn: 'root',
 })
 export class NotificationService {
-  private readonly baseUrl = 'http://localhost:3000';
+  private readonly baseUrl = environment.backendUrl;
   private eventSource: EventSource | null = null;
   private connectedUserId: string | null = null;
 

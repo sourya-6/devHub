@@ -1,11 +1,12 @@
 import { Injectable, NgZone } from '@angular/core';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root',
 })
 export class SocketService {
   private es: EventSource | null = null;
-  private SOCKET_URL = 'http://localhost:3000';
+  private SOCKET_URL = environment.backendUrl;
   private currentProjectId: string | null = null;
 
   constructor(private zone: NgZone) {}

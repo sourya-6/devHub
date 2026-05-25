@@ -2,13 +2,14 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { addProjectTemplate, realProjectTemplate } from './projectTemplate';
+import { environment } from '../../../environments/environment';
 
 @Injectable({
   providedIn: 'root',
 })
 export class Projects {
   constructor(private http:HttpClient){}
-  url:string = "http://localhost:3000"
+  url:string = environment.backendUrl
 
   
   getAllProjects():Observable<realProjectTemplate>{
