@@ -70,7 +70,7 @@ export class NotificationService {
     this.loading.set(true);
     this.loadNotifications().subscribe({
       next: (response) => {
-        this.notifications.set(response.notifications || []);
+        this.notifications.set((response.notifications || []).filter((notification) => !notification.read));
       },
       error: (error) => {
         console.error('Failed to load notifications', error);

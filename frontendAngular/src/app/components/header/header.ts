@@ -97,7 +97,7 @@ export class Header implements OnInit, OnDestroy {
       this.notificationService.markRead(notification._id).subscribe({
         next: () => {
           this.notificationService.notifications.update((current) =>
-            current.map((item) => (item._id === notification._id ? { ...item, read: true } : item))
+            current.filter((item) => item._id !== notification._id)
           );
         },
       });
@@ -110,9 +110,7 @@ export class Header implements OnInit, OnDestroy {
   markAllRead() {
     this.notificationService.markAllRead().subscribe({
       next: () => {
-        this.notificationService.notifications.update((current) =>
-          current.map((item) => ({ ...item, read: true }))
-        );
+        this.notificationService.notifications.set([]);
         this.showNotifications.set(false);
       },
     });
