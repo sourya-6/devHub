@@ -1,6 +1,6 @@
 
 
-import { Component, OnInit, computed } from '@angular/core';
+import { Component, HostListener, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
@@ -33,7 +33,13 @@ export class AllProjects implements OnInit {
     console.log(data);
     
     this.projects = data.projects;
+    this.updateItemsPerRow();
     this.loading = false
+  }
+
+  @HostListener('window:resize')
+  onResize() {
+    this.updateItemsPerRow();
   }
 
   get filteredProjects(): projectTemplate[] {
@@ -66,6 +72,17 @@ export class AllProjects implements OnInit {
     ];
 
     return searchableFields.some((field) => field?.toLowerCase().includes(query));
+  }
+
+  private updateItemsPerRow() {
+    const width = window.innerWidth;
+    if (width < 640) {
+      this.itemsPerRow = 1;
+    } else if (width < 1024) {
+      this.itemsPerRow = 2;
+    } else {
+      this.itemsPerRow = 3;
+    }
   }
 
 }
