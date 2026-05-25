@@ -43,6 +43,10 @@ export interface Reply{
 
 export interface realProjectTemplate{
     count:number,
+    totalCount?: number,
+    page?: number,
+    limit?: number,
+    totalPages?: number,
     projects:projectTemplate[]
 }
 

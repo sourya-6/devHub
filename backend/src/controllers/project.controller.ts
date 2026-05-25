@@ -86,6 +86,9 @@ const getAllProjects = async(req:AuthRequest,
 ) =>{
     try {
         const search = getParamValue(req.query.search);
+        const page = parseInt(getParamValue(req.query.page) || '1', 10);
+        const limit = parseInt(getParamValue(req.query.limit) || '10', 10);
+        
         const normalizedSearch = typeof search === 'string' ? search.trim() : undefined;
 
         // build a RegExp object once and use it in the $or clauses
@@ -97,19 +100,31 @@ const getAllProjects = async(req:AuthRequest,
                 { description: regex },
                 { liveLink: regex },
                 { gitHubLink: regex },
-                // tags is an array of strings; use $in with a regex to match any element
                 { tags: { $in: [regex] } },
             ];
 
             query = { $or: orClauses };
         }
 
+        const skip = (page - 1) * limit;
+        
+        // Use lean() for faster queries, exclude comments, select only needed fields
         const projects = await Project.find(query)
-        .populate("owner", "name username avatar")
-        .sort({ createdAt:-1 })
+            .populate("owner", "name username avatar")
+            .select("-comments")
+            .lean()
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit);
+
+        const totalCount = await Project.countDocuments(query);
 
         res.status(200).json({
-            count:projects.length,
+            count: projects.length,
+            totalCount,
+            page,
+            limit,
+            totalPages: Math.ceil(totalCount / limit),
             projects,
         })
     } catch (error) {

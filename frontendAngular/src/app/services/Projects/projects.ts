@@ -12,8 +12,12 @@ export class Projects {
   url:string = environment.backendUrl
 
   
-  getAllProjects():Observable<realProjectTemplate>{
-    return this.http.get<realProjectTemplate>(`${this.url}/project/`);
+  getAllProjects(page: number = 1, limit: number = 10, search?: string):Observable<realProjectTemplate>{
+    let url = `${this.url}/project/?page=${page}&limit=${limit}`;
+    if (search) {
+      url += `&search=${encodeURIComponent(search)}`;
+    }
+    return this.http.get<realProjectTemplate>(url);
   }
 
   createProject(projectData:addProjectTemplate):Observable<any>{
