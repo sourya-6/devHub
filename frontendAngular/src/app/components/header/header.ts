@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnDestroy, OnInit, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, Signal, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { NotificationService } from '../../services/notifications/notifications';
+import { AppNotification, NotificationService } from '../../services/notifications/notifications';
 import { AuthService } from '../../services/auth/auth-service';
 
 @Component({
@@ -13,19 +13,19 @@ import { AuthService } from '../../services/auth/auth-service';
 })
 export class Header implements OnInit, OnDestroy {
   showNotifications = signal(false);
-  notifications = signal<any[]>([]);
-  unreadCount = signal(0);
+  notifications: Signal<AppNotification[]>;
+  unreadCount: Signal<number>;
 
   constructor(
     private router: Router,
     private notificationService: NotificationService,
     private authService: AuthService
-  ) {}
+  ) {
+    this.notifications = this.notificationService.notifications;
+    this.unreadCount = this.notificationService.unreadCount;
+  }
 
   ngOnInit() {
-    this.notifications.set(this.notificationService.notifications());
-    this.unreadCount.set(this.notificationService.unreadCount());
-
     if (this.isLoggedIn()) {
       this.notificationService.connect();
     }

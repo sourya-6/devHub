@@ -2,6 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { LoginResponse, User } from './user';
 import { Observable } from 'rxjs';
+import { tap } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 
 @Injectable({
@@ -12,17 +13,17 @@ export class Login {
   private readonly baseUrl = environment.backendUrl;
   constructor(private http: HttpClient) { }
   checkLogin(userData: LoginTemplate): Observable<LoginResponse> {
-    const res:Observable<LoginResponse> = this.http.post<LoginResponse>(`${this.baseUrl}/auth/login`, userData)
-    // localStorage.setItem("token",)
-    res.subscribe((item)=>{
-      localStorage.setItem("token",item.token);
-      localStorage.setItem("userId", item.user._id);
-    })
-    return res;
+    return this.http.post<LoginResponse>(`${this.baseUrl}/auth/login`, userData, {
+      withCredentials: true,
+    }).pipe(
+      tap((item) => {
+        localStorage.setItem("token",item.token);
+        localStorage.setItem("userId", item.user._id);
+      })
+    );
   }
 
 
   
 }
-
 

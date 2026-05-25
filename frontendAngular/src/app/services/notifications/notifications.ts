@@ -97,7 +97,7 @@ export class NotificationService {
     this.connectedUserId = userId;
     this.refreshNotifications();
 
-    this.eventSource = new EventSource(`${this.baseUrl}/notifications/stream`, {
+    this.eventSource = new EventSource(`${this.baseUrl}/notifications/stream?token=${encodeURIComponent(token)}`, {
       withCredentials: true,
     });
 
