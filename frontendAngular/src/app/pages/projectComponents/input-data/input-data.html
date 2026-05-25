@@ -1,0 +1,41 @@
+<div class="comment-composer">
+  <div class="comment-composer__header">
+    <div>
+      <p class="comment-composer__eyebrow">Join the discussion</p>
+      <h3 class="comment-composer__title">Add a new comment</h3>
+    </div>
+    <span class="comment-composer__counter">{{ commentText().length }}/280</span>
+  </div>
+
+  <textarea
+    rows="4"
+    maxlength="280"
+    placeholder="Share your thoughts..."
+    class="comment-composer__textarea"
+    [(ngModel)]="commentText"
+    [disabled]="isAddingComment()"
+  ></textarea>
+
+  <div class="comment-composer__footer">
+    <p class="comment-composer__hint">Be clear, concise, and respectful.</p>
+
+    <button
+      class="comment-composer__button"
+      (click)="addComment()"
+      [disabled]="isAddingComment()"
+    >
+      @if (!isAddingComment()) {
+        <span>Post comment</span>
+      } @else {
+        <span>Posting...</span>
+      }
+
+      @if (isAddingComment()) {
+        <svg class="comment-composer__spinner" viewBox="0 0 50 50" aria-label="Loading">
+          <circle class="comment-composer__spinner-track" cx="25" cy="25" r="20"></circle>
+          <circle class="comment-composer__spinner-ring" cx="25" cy="25" r="20"></circle>
+        </svg>
+      }
+    </button>
+  </div>
+</div>

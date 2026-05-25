@@ -1,0 +1,657 @@
+import type {Request, Response} from "express"
+import type { AuthRequest } from "../middlewares/auth.middleware.js"
+import { Project } from "../models/project.model.js"
+import { uploadToCloudinary } from "../utils/cloudinary.js"
+import mongoose from "mongoose"
+import { publish, subscribe } from "../sse/sse.js";
+import { createNotification } from "../utils/notifications.js";
+import { log } from "node:console"
+// import { log } from "node:console"
+
+const getParamValue = (value: string | string[] | undefined) => {
+    if (Array.isArray(value)) {
+        return value[0];
+    }
+
+    return value;
+}
+
+const createProject = async(req:AuthRequest,
+    res:Response
+) =>{
+    try {
+        const {title, description, liveLink, gitHubLink, tags} = req.body
+        if(!title || ! description){
+            return res.status(400).json({
+                message:"Title and description required"
+            })
+        }
+
+        if(!req.user?._id){
+            return res.status(401).json({
+                message:"Unauthorized"
+            })
+        }
+        const imageUrl = req.file ? await uploadToCloudinary(req.file.path) : null;
+
+        const project = await Project.create({
+            title,
+            description,
+            image: imageUrl?.url ?? "",
+            liveLink,
+            gitHubLink,
+            tags: tags?tags.split(",").map((t:string)=>t.trim()):[],
+            owner:req.user._id,
+        })
+
+        res.status(201).json({
+            message:"Project Created Successfully",
+            project
+        })
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            message:"Failed to Create Project"
+        })
+    }
+}
+
+const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+const getAllProjects = async(req:AuthRequest,
+    res:Response
+) =>{
+    try {
+        const search = getParamValue(req.query.search);
+        const normalizedSearch = typeof search === 'string' ? search.trim() : undefined;
+
+        const query = normalizedSearch ? {
+            $or: [
+                { title: { $regex: escapeRegExp(normalizedSearch), $options: 'i' } },
+                { description: { $regex: escapeRegExp(normalizedSearch), $options: 'i' } },
+                { liveLink: { $regex: escapeRegExp(normalizedSearch), $options: 'i' } },
+                { gitHubLink: { $regex: escapeRegExp(normalizedSearch), $options: 'i' } },
+                { tags: { $regex: escapeRegExp(normalizedSearch), $options: 'i' } },
+            ]
+        } : {};
+
+        const projects = await Project.find(query)
+        .populate("owner", "name username avatar")
+        .sort({ createdAt:-1 })
+
+        res.status(200).json({
+            count:projects.length,
+            projects,
+        })
+    } catch (error) {
+        console.error('getAllProjects error:', error);
+        res.status(500).json({
+            message:"Failed to fetch projects"
+        })
+
+    }
+}
+
+const getProjectById = async(req:AuthRequest,
+    res:Response
+) =>{
+    try {
+        const id = getParamValue(req.params.id);
+        if(!id || !id.match(/^[0-9a-fA-F]{24}$/)){
+            return res.status(404).json({
+                message:"Invalid Project ID"
+            })
+        }
+        
+        const project = await Project.findById(id)
+        .populate("owner", "name username avatar")
+        .populate("comments.user", "name username avatar")
+        .populate("comments.replies.user","name username avatar")
+
+        console.log(project);
+        
+        if(!project){
+            return res.status(404).json({
+                message: "Project Not Found!!"
+            })
+        }
+        res.status(200).json({
+            project,
+        })
+
+    } catch (error) {
+        res.status(500).json({
+            message:"Failed to Fetch Project"
+        })
+    }
+}
+
+const streamProjectEvents = (req: Request, res: Response) => {
+    const id = getParamValue(req.params.id);
+    if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).end();
+    }
+
+    res.writeHead(200, {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        Connection: 'keep-alive',
+    });
+
+    // send a comment to establish the stream
+    res.write(`: connected to project ${id}\n\n`);
+
+    const onPayload = (payload: any) => {
+        const eventName = payload?.event ?? 'message';
+        const data = payload?.data ?? payload;
+        res.write(`event: ${eventName}\n`);
+        res.write(`data: ${JSON.stringify(data)}\n\n`);
+    };
+
+    const unsubscribe = subscribe(`project:${id}`, onPayload);
+
+    // remove listener on client disconnect
+    req.on('close', () => {
+        unsubscribe();
+    });
+};
+
+
+const toogleLikeProject = async(req:AuthRequest,res:Response):Promise<Response>=>{
+    try {
+        const id = getParamValue(req.params.id);
+    const userId = req.user._id;
+
+    if(!id || !mongoose.Types.ObjectId.isValid(id)){
+        return res.status(400).json({
+            message:"Invalid Project Id"
+        })
+    }
+
+    const project = await Project.findById(id);
+
+    if(!project){
+        return res.status(404).json({
+            message:"Project not Found!!"
+        })
+    }
+
+    const isLiked = project.likes.some((like) => like.toString() === userId.toString());
+
+    if(isLiked){
+        project.likes = project.likes.filter((like) => like.toString() !== userId.toString());
+    }else{
+        project.likes.push(userId);
+    }
+
+    await project.save();
+    publish(`project:${id}`, {
+        event: "project:likes-updated",
+        data: {
+            projectId: id,
+            likes: project.likes,
+            totalLikes: project.likes.length,
+        },
+    });
+    return res.status(200).json({
+        message: isLiked ? "Unliked Project":"Liked Project",
+        totalLikes: project.likes.length,
+        isLiked:!isLiked,
+        likes: project.likes
+    })
+
+
+    } catch (error) {
+        return res.status(500).json({
+            message:"Failed to toggle!!"
+        })
+    }
+}
+
+
+const postComment = async(req:AuthRequest, res:Response):Promise<Response> =>{
+    try {
+        const id = getParamValue(req.params.id);
+        let {text} = req.body;
+        console.log(id);
+        
+        console.log("Received comment text:", text);
+        text = text.trim();
+        const userId:string = req.user.id;
+        if(!text){
+            return res.status(400).json({
+                message:"No text Found"
+            })
+        }
+        if(!id || !mongoose.Types.ObjectId.isValid(id)){
+            return res.status(400).json({
+                message:"Invalid ProjectID"
+            })
+        }
+        
+        const project = await Project.findById(id);
+
+        if(!project){
+            return res.status(404).json({
+                message:"No project with given ID"
+            })
+        }
+        const newComment = {
+            user:userId,
+            text,
+            createdAt: new Date()
+        }
+        
+        project.comments.push(newComment);
+        await project.save();
+        const createdComment = project.comments[project.comments.length - 1];
+
+        const updatedProject = await Project.findById(id)
+        .populate("comments.user", "name username avatar")
+        .populate("comments.replies.user", "name username avatar");
+
+        if (updatedProject) {
+            publish(`project:${id}`, {
+                event: "project:comments-updated",
+                data: {
+                    projectId: id,
+                    comments: updatedProject.comments,
+                },
+            });
+        }
+
+                void createNotification({
+          userId: project.owner,
+          actorId: req.user._id,
+          projectId: project._id,
+          type: 'comment',
+          message: `${req.user.name} commented on your project "${project.title}"`,
+                    commentId: createdComment?._id ?? null,
+                }).catch((error) => console.error('Failed to create comment notification', error));
+
+        return res.status(201).json({
+            message:"Comment Added Successfully",
+            comments:updatedProject?.comments ?? project.comments
+        })
+    } catch (error) {
+        return res.status(500).json({
+            message:"Error while creating the comment"
+        })
+    }
+}
+
+
+const editComment = async(req:AuthRequest,res:Response):Promise<Response> =>{
+    try {
+        const commentId = getParamValue(req.params.commentId);
+        const projectId = getParamValue(req.params.projectId);
+        const { updatedText } = req.body
+        const userId = req.user._id;
+
+        if(!commentId || !mongoose.Types.ObjectId.isValid(commentId)){
+            return res.status(400).json({
+                message:"Invalid commentId"
+            })
+        }
+
+        if(!projectId || !mongoose.Types.ObjectId.isValid(projectId)){
+            return res.status(400).json({
+                message:"Invalid projectId"
+            })
+        }
+
+        const project = await Project.findById(projectId);
+
+        if(!project){
+            return res.status(404).json({
+                message:"Project Not Found"
+            })
+        }
+
+        const comment = project.comments.id(commentId);
+        if(!comment){
+            return res.status(404).json({
+                message:"Comment Not Found"
+            })
+        }
+        if(comment.user?.toString() !== userId.toString()){
+            return res.status(401).json({
+                message:"Unauthorized"
+            })
+        }
+
+        comment.text = updatedText;
+        await project.save();
+
+        return res.status(201).json({
+            message:"Comment Edited Successfully",
+            comment,
+        })
+
+
+    } catch (error) {
+        return res.status(500).json({
+            message:"Something Went Wrong while Updating Comment"
+        })
+    }
+}
+
+const deleteComment = async(req:AuthRequest,res:Response):Promise<Response> =>{
+    try {
+        const commentId = getParamValue(req.params.commentId);
+        const projectId = getParamValue(req.params.projectId);
+        const userId = req.user._id;
+
+        if(!commentId || !mongoose.Types.ObjectId.isValid(commentId)){
+            return res.status(400).json({
+                message:"Invalid commentId"
+            })
+        }
+
+        if(!projectId || !mongoose.Types.ObjectId.isValid(projectId)){
+            return res.status(400).json({
+                message:"Invalid projectId"
+            })
+        }
+
+        const project = await Project.findById(projectId);
+        if(!project){
+            return res.status(404).json({
+                message:"Project Not Found"
+            })
+        }
+
+        const comment = project.comments.id(commentId);
+        if(!comment){
+            return res.status(404).json({
+                message:"Comment Not Found!!"
+            })
+        }
+
+        if(!comment.user || comment.user.toString() !== userId.toString()){
+            return res.status(401).json({
+                message:"Unauthorized Access"
+            })
+        }
+
+        comment.deleteOne();
+        await project.save();
+
+        return res.status(200).json({
+            message:"Comment Deleted Successfully",
+            comments: project.comments
+        })
+        
+        
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            message:"Something Went Wrong While deleting the comment"
+        })
+    }
+}
+
+const replyComment = async(req:AuthRequest,res:Response):Promise<Response> =>{
+    try {
+        const commentId = getParamValue(req.params.commentId);
+        let {text} = req.body;
+        const userId = req.user._id;
+        text = text.trim();
+        if(!commentId || !mongoose.Types.ObjectId.isValid(commentId)){
+            return res.status(400).json({
+                message:"Invalid commentId"
+            })
+        }
+        if(!text){
+            return res.status(400).json({
+                message:"Reply Text required"
+            })
+        }
+        
+
+        const project = await Project.findOne({"comments._id":commentId});
+        // console.log(project)
+        if(!project){
+            return res.status(404).json({
+                message:"Project Not Found"
+            })
+        }
+
+        const comment = project.comments.id(commentId);
+        // console.log(comment)
+        if(!comment){
+            return res.status(404).json({
+                message:"Comment Not Found!!"
+            })
+        }
+        // console.log("Replies",comment.replies)
+        comment.replies.push({
+            user:userId,
+            text,
+            createdAt:new Date()
+        })
+
+        await project.save();
+        const updatedProject = await Project.findById(project._id)
+        .populate("comments.user", "name username avatar")
+        .populate("comments.replies.user", "name username avatar");
+
+        if (updatedProject) {
+            publish(`project:${project._id}`, {
+                event: "project:comments-updated",
+                data: {
+                    projectId: project._id,
+                    comments: updatedProject.comments,
+                },
+            });
+            publish(`project:${project._id}`, {
+                event: "project:replies-updated",
+                data: {
+                    projectId: project._id,
+                    commentId,
+                    comments: updatedProject.comments,
+                },
+            });
+        }
+
+                void createNotification({
+          userId: project.owner,
+          actorId: req.user._id,
+          projectId: project._id,
+          type: 'reply',
+          message: `${req.user.name} replied on your project "${project.title}"`,
+          commentId,
+                }).catch((error) => console.error('Failed to create reply notification', error));
+        return res.status(201).json({
+            message:"Reply Added",
+            comment
+        })
+
+
+    } catch (error) {
+        return res.status(500).json({
+            message:"Failed to reply comment"
+        })
+    }
+}
+
+const editReply = async(req:AuthRequest,res:Response):Promise<Response> =>{
+    try {
+        const commentId = getParamValue(req.params.commentId);
+        const replyId = getParamValue(req.params.replyId);
+        const { updatedText } = req.body
+        const userId = req.user._id;
+
+        if(!commentId || !mongoose.Types.ObjectId.isValid(commentId)){
+            return res.status(400).json({
+                message:"Invalid commentId"
+            })
+        }
+
+        if(!replyId || !mongoose.Types.ObjectId.isValid(replyId)){
+            return res.status(400).json({
+                message:"Invalid replyId"
+            })
+        }
+
+        const project = await Project.findOne({"comments._id":commentId});
+
+        if(!project){
+            return res.status(404).json({
+                message:"Project Not Found"
+            })
+        }
+
+        const comment = project.comments.id(commentId);
+        if(!comment){
+            return res.status(404).json({
+                message:"Comment Not Found"
+            })
+        }
+
+        const reply = comment.replies.id(replyId);
+        if(!reply){
+            return res.status(404).json({
+                message:"Reply Not Found"
+            })
+        }
+
+        if(reply.user?.toString() !== userId.toString()){
+            return res.status(401).json({
+                message:"Unauthorized"
+            })
+        }
+
+        reply.text = updatedText;
+        await project.save();
+
+        const updatedProject = await Project.findById(project._id)
+        .populate("comments.user", "name username avatar")
+        .populate("comments.replies.user", "name username avatar");
+
+        if (updatedProject) {
+            publish(`project:${project._id}`, {
+                event: "project:comments-updated",
+                data: {
+                    projectId: project._id,
+                    comments: updatedProject.comments,
+                },
+            });
+            publish(`project:${project._id}`, {
+                event: "project:replies-updated",
+                data: {
+                    projectId: project._id,
+                    commentId,
+                    comments: updatedProject.comments,
+                },
+            });
+        }
+
+        return res.status(200).json({
+            message:"Reply Edited Successfully",
+            comment
+        })
+    } catch (error) {
+        return res.status(500).json({
+            message:"Something Went Wrong While Updating Reply"
+        })
+    }
+}
+
+const deleteReply = async(req:AuthRequest,res:Response):Promise<Response> =>{
+    try {
+        const commentId = getParamValue(req.params.commentId);
+        const replyId = getParamValue(req.params.replyId);
+        const userId = req.user._id;
+
+        if(!commentId || !mongoose.Types.ObjectId.isValid(commentId)){
+            return res.status(400).json({
+                message:"Invalid commentId"
+            })
+        }
+
+        if(!replyId || !mongoose.Types.ObjectId.isValid(replyId)){
+            return res.status(400).json({
+                message:"Invalid replyId"
+            })
+        }
+
+        const project = await Project.findOne({"comments._id":commentId});
+
+        if(!project){
+            return res.status(404).json({
+                message:"Project Not Found"
+            })
+        }
+
+        const comment = project.comments.id(commentId);
+        if(!comment){
+            return res.status(404).json({
+                message:"Comment Not Found"
+            })
+        }
+
+        const reply = comment.replies.id(replyId);
+        if(!reply){
+            return res.status(404).json({
+                message:"Reply Not Found"
+            })
+        }
+
+        if(reply.user?.toString() !== userId.toString()){
+            return res.status(401).json({
+                message:"Unauthorized"
+            })
+        }
+
+        reply.deleteOne();
+        await project.save();
+
+        const updatedProject = await Project.findById(project._id)
+        .populate("comments.user", "name username avatar")
+        .populate("comments.replies.user", "name username avatar");
+
+        if (updatedProject) {
+            publish(`project:${project._id}`, {
+                event: "project:comments-updated",
+                data: {
+                    projectId: project._id,
+                    comments: updatedProject.comments,
+                },
+            });
+            publish(`project:${project._id}`, {
+                event: "project:replies-updated",
+                data: {
+                    projectId: project._id,
+                    commentId,
+                    comments: updatedProject.comments,
+                },
+            });
+        }
+
+        return res.status(200).json({
+            message:"Reply Deleted Successfully",
+            comment
+        })
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            message:"Something Went Wrong While Deleting Reply"
+        })
+    }
+}
+
+export {
+    createProject,
+    getAllProjects,
+    getProjectById,
+    toogleLikeProject,
+    postComment,
+    editComment,
+    deleteComment,
+    replyComment,
+    editReply,
+    deleteReply
+    ,streamProjectEvents
+}
+

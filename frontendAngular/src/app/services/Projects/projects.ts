@@ -1,0 +1,123 @@
+import { HttpClient } from '@angular/common/http';
+import { Injectable } from '@angular/core';
+import { Observable } from 'rxjs';
+import { addProjectTemplate, realProjectTemplate } from './projectTemplate';
+
+@Injectable({
+  providedIn: 'root',
+})
+export class Projects {
+  constructor(private http:HttpClient){}
+  url:string = "http://localhost:3000"
+
+  
+  getAllProjects():Observable<realProjectTemplate>{
+    return this.http.get<realProjectTemplate>(`${this.url}/project/`);
+  }
+
+  createProject(projectData:addProjectTemplate):Observable<any>{
+    const token = localStorage.getItem('token');
+    const formData = new FormData();
+
+    formData.append('title', projectData.title);
+    formData.append('description', projectData.description);
+
+    if (projectData.liveLink) {
+      formData.append('liveLink', projectData.liveLink);
+    }
+
+    if (projectData.gitHubLink) {
+      formData.append('gitHubLink', projectData.gitHubLink);
+    }
+
+    if (projectData.tags) {
+      formData.append('tags', projectData.tags);
+    }
+
+    if (projectData.image) {
+      formData.append('image', projectData.image);
+    }
+
+    return this.http.post(`${this.url}/project`, formData, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+  }
+
+  getProjectById(id:Number):Observable<{project:realProjectTemplate}>{
+  return this.http.get<{project: realProjectTemplate}>(`${this.url}/project/${id}`)
+  }
+
+  toggleLike(id:string){
+    const token = localStorage.getItem("token");
+    return this.http.patch(`${this.url}/project/${id}/like`,{},{
+      headers:{
+        Authorization: `Bearer ${token}`
+      }
+    })
+  }
+
+  // Comment Route
+  addComment(projectId:string, commentText:string):Observable<any>{
+    const token = localStorage.getItem("token");
+    console.log(token);
+    
+    return this.http.post(`${this.url}/project/${projectId}/comments`,{text:commentText},{
+      headers:{
+        Authorization: `Bearer ${token}`
+      }
+    })
+  }
+
+  // Edit Comment
+  editComment(projectId:string, commentId:string, updatedText:string):Observable<any>{
+    const token = localStorage.getItem("token");
+    return this.http.patch(`${this.url}/project/${projectId}/comments/${commentId}`,{updatedText},{
+      headers:{
+        Authorization: `Bearer ${token}`
+      }
+    })
+  }
+
+  // Delete Comment
+  deleteComment(projectId:string, commentId:string):Observable<any>{
+    const token = localStorage.getItem("token");
+    return this.http.delete(`${this.url}/project/${projectId}/comments/${commentId}`,{
+      headers:{
+        Authorization: `Bearer ${token}`
+      }
+    })
+  }
+
+  // Add Reply to Comment
+  addReply(projectId:string, commentId:string, replyText:string):Observable<any>{
+    const token = localStorage.getItem("token");
+    return this.http.post(`${this.url}/project/${projectId}/comments/${commentId}/reply`,{text:replyText},{
+      headers:{
+        Authorization: `Bearer ${token}`
+      }
+    })
+  }
+
+  // Edit Reply
+  editReply(projectId:string, commentId:string, replyId:string, updatedText:string):Observable<any>{
+    const token = localStorage.getItem("token");
+    return this.http.patch(`${this.url}/project/${projectId}/comments/${commentId}/reply/${replyId}`,{updatedText},{
+      headers:{
+        Authorization: `Bearer ${token}`
+      }
+    })
+  }
+
+  // Delete Reply
+  deleteReply(projectId:string, commentId:string, replyId:string):Observable<any>{
+    const token = localStorage.getItem("token");
+    return this.http.delete(`${this.url}/project/${projectId}/comments/${commentId}/reply/${replyId}`,{
+      headers:{
+        Authorization: `Bearer ${token}`
+      }
+    })
+  }
+  
+}

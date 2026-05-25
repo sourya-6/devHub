@@ -1,0 +1,42 @@
+/* Inline loader spinner - similar to route-loader but smaller */
+.reply-loader {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.reply-loader__svg {
+  width: 1.2rem;
+  height: 1.2rem;
+  animation: route-loader-rotate 1s linear infinite;
+}
+
+.reply-loader__track,
+.reply-loader__spinner {
+  fill: none;
+  stroke-width: 4;
+  stroke-linecap: round;
+}
+
+.reply-loader__track {
+  stroke: rgba(21, 32, 56, 0.15);
+}
+
+.reply-loader__spinner {
+  stroke: #152038;
+  stroke-dasharray: 90;
+  stroke-dashoffset: 60;
+}
+
+.reply-loader__text {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #152038;
+  margin: 0;
+}
+
+@keyframes route-loader-rotate {
+  to {
+    transform: rotate(360deg);
+  }
+}

@@ -1,0 +1,336 @@
+<div class="mt-10 bg-white rounded-3xl shadow-xl p-8"> 
+
+  <h2 class="text-3xl font-bold text-gray-900 mb-8"> 
+    Comments ({{ commentCount() }}) 
+  </h2> 
+
+  <button 
+    class="px-6 py-2 bg-black text-white rounded-xl font-semibold hover:bg-gray-800 transition duration-300" 
+    (click)="addComment()"
+  >
+    + Add Comment
+  </button>
+
+  <ng-container #inputData></ng-container>
+
+  <!-- No Comments --> 
+  @if (commentCount() === 0) {
+    <div class="text-gray-500 text-lg mt-8">
+      No comments yet.
+    </div>
+  }
+
+  <!-- Comments --> 
+  @for (comment of getValidComments(); track comment._id) {
+
+    <div class="border border-gray-200 rounded-2xl p-5 mb-6 mt-6">
+
+      <!-- Comment Header -->
+      <div class="flex items-center justify-between mb-3">
+
+        <div class="flex items-center gap-3">
+
+          <img
+            [src]="comment.user.avatar"
+            [alt]="comment.user.name"
+            class="w-10 h-10 rounded-full object-cover border border-gray-300"
+          />
+
+          <div>
+            <h3 class="font-semibold text-lg text-gray-800">
+              {{ comment.user.name }}
+            </h3>
+            <p class="text-xs text-gray-500">
+              @{{ comment.user.username }}
+            </p>
+          </div>
+
+        </div>
+
+        <span class="text-sm text-gray-500">
+          {{ comment.createdAt | date:'medium' }}
+        </span>
+
+      </div>
+
+      <!-- Comment Text Display -->
+      @if (editingCommentId() !== comment._id!) {
+        <p class="text-gray-700 leading-relaxed mb-4"> 
+          {{ comment.text }} 
+        </p>
+      }
+
+      <!-- Comment Edit Input -->
+      @if (editingCommentId() === comment._id!) {
+        <div class="mb-4">
+          <textarea
+            [(ngModel)]="editCommentText()[comment._id!]"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-black transition-all duration-300 resize-none"
+            rows="3"
+          ></textarea>
+          <div class="flex gap-2 mt-2 items-center">
+            <button
+              (click)="updateComment(comment._id!)"
+              [disabled]="loadingComments()[comment._id!]"
+              class="px-4 py-2 bg-black text-white rounded-lg font-semibold hover:bg-gray-800 transition duration-300 disabled:opacity-60"
+            >
+              Save
+            </button>
+            <button
+              (click)="toggleEditComment(comment._id!)"
+              class="px-4 py-2 bg-gray-300 text-gray-800 rounded-lg font-semibold hover:bg-gray-400 transition duration-300"
+            >
+              Cancel
+            </button>
+            @if (loadingComments()[comment._id!]) {
+              <div class="reply-loader">
+                <svg class="reply-loader__svg" viewBox="0 0 50 50" aria-label="Loading">
+                  <circle class="reply-loader__track" cx="25" cy="25" r="20"></circle>
+                  <circle class="reply-loader__spinner" cx="25" cy="25" r="20"></circle>
+                </svg>
+                <p class="reply-loader__text">Updating...</p>
+              </div>
+            }
+          </div>
+        </div>
+      }
+
+      <!-- Comment Actions -->
+      @if (editingCommentId() !== comment._id! && isCurrentUserComment(comment.user._id)) {
+        <div class="flex gap-3 mb-4">
+          <button 
+            (click)="toggleReplyInput(comment._id!)"
+            class="text-sm px-3 py-1 text-black border border-gray-300 rounded-lg hover:bg-gray-100 transition duration-300"
+          >
+            {{ expandedReplies()['reply-' + comment._id!] ? 'Cancel' : '↪️ Reply' }}
+          </button>
+          <button
+            (click)="toggleEditComment(comment._id!)"
+            [disabled]="loadingComments()[comment._id!]"
+            class="text-xs px-2 py-1 text-blue-600 hover:bg-blue-50 rounded transition duration-300 disabled:opacity-60"
+          >
+            ✏️ Edit
+          </button>
+          <button
+            (click)="deleteComment(comment._id!)"
+            [disabled]="loadingComments()[comment._id!]"
+            class="text-xs px-2 py-1 text-red-600 hover:bg-red-50 rounded transition duration-300 disabled:opacity-60"
+          >
+            🗑️ Delete
+          </button>
+          @if (loadingComments()[comment._id!]) {
+            <div class="reply-loader">
+              <svg class="reply-loader__svg" viewBox="0 0 50 50" aria-label="Loading">
+                <circle class="reply-loader__track" cx="25" cy="25" r="20"></circle>
+                <circle class="reply-loader__spinner" cx="25" cy="25" r="20"></circle>
+              </svg>
+              <p class="reply-loader__text">Processing...</p>
+            </div>
+          }
+        </div>
+      }
+
+      <!-- Reply Button (for non-owners) -->
+      @if (editingCommentId() !== comment._id! && !isCurrentUserComment(comment.user._id)) {
+        <div class="flex gap-3 mb-4">
+          <button 
+            (click)="toggleReplyInput(comment._id!)"
+            class="text-sm px-3 py-1 text-black border border-gray-300 rounded-lg hover:bg-gray-100 transition duration-300"
+          >
+            {{ expandedReplies()['reply-' + comment._id!] ? 'Cancel' : '↪️ Reply' }}
+          </button>
+        </div>
+      }
+
+      <!-- Reply Input -->
+      @if (expandedReplies()['reply-' + comment._id!]) {
+
+        <div class="mb-4 ml-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+
+          <textarea
+            [(ngModel)]="replyTexts()['reply-' + comment._id!]"
+            placeholder="Write a reply..."
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-black transition-all duration-300 resize-none"
+            rows="3"
+          ></textarea>
+
+          <div class="flex gap-2 mt-2 items-center">
+
+            <button
+              (click)="addReply(comment._id)"
+              [disabled]="loadingReplies()['reply-' + comment._id!]"
+              class="px-4 py-2 bg-black text-white rounded-lg font-semibold hover:bg-gray-800 transition duration-300 disabled:opacity-60"
+            >
+              Post Reply
+            </button>
+
+            <button
+              (click)="toggleReplyInput(comment._id)"
+              class="px-4 py-2 bg-gray-300 text-gray-800 rounded-lg font-semibold hover:bg-gray-400 transition duration-300"
+            >
+              Cancel
+            </button>
+
+            @if (loadingReplies()['reply-' + comment._id!]) {
+              <div class="reply-loader">
+                <svg class="reply-loader__svg" viewBox="0 0 50 50" aria-label="Loading">
+                  <circle class="reply-loader__track" cx="25" cy="25" r="20"></circle>
+                  <circle class="reply-loader__spinner" cx="25" cy="25" r="20"></circle>
+                </svg>
+                <p class="reply-loader__text">Saving...</p>
+              </div>
+            }
+
+          </div>
+
+        </div>
+      }
+
+      <!-- Replies --> 
+      @if (comment.replies && comment.replies.length > 0) {
+
+        <div class="mt-5 ml-6 border-l-2 border-gray-300 pl-5">
+
+          <h4 class="font-semibold text-gray-700 mb-4 text-sm"> 
+            {{ comment.replies.length }} 
+            {{ comment.replies.length === 1 ? 'Reply' : 'Replies' }}
+          </h4> 
+
+          @for (reply of getValidReplies(comment); track reply._id) {
+
+            <div class="bg-gray-50 rounded-xl p-4 mb-4 border border-gray-200">
+
+              <div class="flex items-center justify-between mb-2">
+
+                <div class="flex items-center gap-2">
+
+                  <img
+                    [src]="reply.user.avatar"
+                    [alt]="reply.user.name"
+                    class="w-8 h-8 rounded-full object-cover border border-gray-300"
+                  />
+
+                  <div>
+                    <h5 class="font-medium text-gray-800">
+                      {{ reply.user.name }}
+                    </h5>
+                    <p class="text-xs text-gray-500">
+                      @{{ reply.user.username }}
+                    </p>
+                  </div>
+
+                </div>
+
+                <span class="text-xs text-gray-500">
+                  {{ reply.createdAt | date:'short' }}
+                </span>
+
+              </div>
+
+              <!-- Reply Text Display -->
+              @if (
+                comment._id &&
+                editingReplyId()[comment._id] !== reply._id
+              ) {
+
+                <p class="text-gray-700 mb-2">
+                  {{ reply.text }}
+                </p>
+              }
+
+              <!-- Reply Edit Input -->
+              @if (
+                comment._id &&
+                editingReplyId()[comment._id] === reply._id
+              ) {
+
+                <div class="mb-2">
+
+                  <textarea
+                    [(ngModel)]="editReplyTexts()['edit-' + comment._id + '-' + reply._id!]"
+                    class="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-black transition-all duration-300 resize-none"
+                    rows="2"
+                  ></textarea>
+
+                  <div class="flex gap-2 mt-2 items-center">
+
+                    <button
+                      (click)="updateReply(comment._id, reply._id)"
+                      [disabled]="loadingReplies()['reply-' + reply._id]"
+                      class="px-3 py-1 bg-black text-white rounded text-sm hover:bg-gray-800 transition duration-300 disabled:opacity-60"
+                    >
+                      Save
+                    </button>
+
+                    <button
+                      (click)="toggleEditReply(comment._id, reply._id)"
+                      class="px-3 py-1 bg-gray-400 text-white rounded text-sm hover:bg-gray-500 transition duration-300"
+                    >
+                      Cancel
+                    </button>
+
+                    @if (loadingReplies()['reply-' + reply._id]) {
+                      <div class="reply-loader">
+                        <svg class="reply-loader__svg" viewBox="0 0 50 50" aria-label="Loading">
+                          <circle class="reply-loader__track" cx="25" cy="25" r="20"></circle>
+                          <circle class="reply-loader__spinner" cx="25" cy="25" r="20"></circle>
+                        </svg>
+                        <p class="reply-loader__text">Updating...</p>
+                      </div>
+                    }
+
+                  </div>
+
+                </div>
+              }
+
+              <!-- Reply Actions -->
+              @if (
+                comment._id &&
+                isCurrentUserComment(reply.user._id) &&
+                editingReplyId()[comment._id] !== reply._id
+              ) {
+
+                <div class="flex gap-2 mt-2 items-center">
+
+                  <button
+                    (click)="toggleEditReply(comment._id, reply._id)"
+                    [disabled]="loadingReplies()['reply-' + reply._id]"
+                    class="text-xs px-2 py-1 text-blue-600 hover:bg-blue-50 rounded transition duration-300 disabled:opacity-60"
+                  >
+                    ✏️ Edit
+                  </button>
+
+                  <button
+                    (click)="deleteReply(comment._id, reply._id)"
+                    [disabled]="loadingReplies()['reply-' + reply._id]"
+                    class="text-xs px-2 py-1 text-red-600 hover:bg-red-50 rounded transition duration-300 disabled:opacity-60"
+                  >
+                    🗑️ Delete
+                  </button>
+
+                  @if (loadingReplies()['reply-' + reply._id]) {
+                    <div class="reply-loader">
+                      <svg class="reply-loader__svg" viewBox="0 0 50 50" aria-label="Loading">
+                        <circle class="reply-loader__track" cx="25" cy="25" r="20"></circle>
+                        <circle class="reply-loader__spinner" cx="25" cy="25" r="20"></circle>
+                      </svg>
+                      <p class="reply-loader__text">Processing...</p>
+                    </div>
+                  }
+
+                </div>
+              }
+
+            </div>
+
+          }
+
+        </div>
+      }
+
+    </div>
+
+  }
+
+</div>

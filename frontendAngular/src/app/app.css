@@ -1,0 +1,64 @@
+
+:host {
+	display: block;
+	min-height: 100vh;
+	background: #f7f7fb;
+}
+
+.route-loader {
+	position: fixed;
+	inset: 0;
+	z-index: 1000;
+	display: grid;
+	place-items: center;
+	background: rgba(10, 12, 20, 0.28);
+	backdrop-filter: blur(6px);
+	-webkit-backdrop-filter: blur(6px);
+}
+
+.route-loader__card {
+	display: grid;
+	place-items: center;
+	gap: 0.9rem;
+	padding: 1.25rem 1.5rem;
+	border-radius: 1rem;
+	background: rgba(255, 255, 255, 0.9);
+	box-shadow: 0 20px 60px rgba(10, 12, 20, 0.18);
+	min-width: 10rem;
+}
+
+.route-loader__svg {
+	width: 3rem;
+	height: 3rem;
+	animation: route-loader-rotate 1s linear infinite;
+}
+
+.route-loader__track,
+.route-loader__spinner {
+	fill: none;
+	stroke-width: 4;
+	stroke-linecap: round;
+}
+
+.route-loader__track {
+	stroke: rgba(21, 32, 56, 0.15);
+}
+
+.route-loader__spinner {
+	stroke: #152038;
+	stroke-dasharray: 90;
+	stroke-dashoffset: 60;
+}
+
+.route-loader p {
+	margin: 0;
+	font-size: 0.95rem;
+	font-weight: 600;
+	color: #152038;
+}
+
+@keyframes route-loader-rotate {
+	to {
+		transform: rotate(360deg);
+	}
+}

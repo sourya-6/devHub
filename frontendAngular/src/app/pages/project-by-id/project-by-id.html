@@ -1,0 +1,179 @@
+<div class="min-h-screen bg-gray-100 py-10 px-4"> 
+
+ 
+
+<div class="max-w-6xl mx-auto"> 
+
+ 
+
+<!-- Project Card --> 
+
+<div class="bg-white rounded-3xl shadow-2xl overflow-hidden"> 
+
+ 
+
+<!-- Image --> 
+
+<img 
+
+[src]="project.image" 
+
+[alt]="project.title" 
+
+class="w-full h-[450px] object-cover" 
+
+/> 
+
+ 
+
+<!-- Content --> 
+
+<div class="p-8"> 
+
+ 
+
+<!-- Title --> 
+
+<div class="flex items-center justify-between flex-wrap gap-4"> 
+
+ 
+
+<h1 class="text-5xl font-bold text-gray-900"> 
+
+{{ project.title }} 
+
+</h1> 
+
+ 
+
+<!-- Likes --> 
+
+<div class="flex items-center gap-2 px-4 py-2 rounded-full transition-colors duration-200" [class.bg-red-100]="isLiked" [class.bg-gray-100]="!isLiked" [class.text-red-600]="isLiked" [class.text-gray-700]="!isLiked"> 
+
+ 
+
+<button class="text-xl transition-transform duration-200 hover:scale-110" (click)="toggleLike()">{{ isLiked ? '❤️' : '🤍' }}</button> 
+
+ 
+
+<span class="font-semibold"> 
+
+{{ likeCount }} 
+
+</span> 
+
+ 
+
+</div> 
+
+ 
+
+</div> 
+
+ 
+
+<!-- Description --> 
+
+<p class="mt-6 text-lg leading-relaxed text-gray-600"> 
+
+{{ project.description }} 
+
+</p> 
+
+ 
+
+<!-- Tags --> 
+
+<div class="flex flex-wrap gap-3 mt-8"> 
+
+ 
+
+<span 
+
+*ngFor="let tag of project.tags" 
+
+class="bg-black text-white px-5 py-2 rounded-full text-sm font-medium shadow-md" 
+
+> 
+
+#{{ tag }} 
+
+</span> 
+
+ 
+
+</div> 
+
+ 
+
+<!-- Buttons --> 
+
+<div class="flex flex-wrap gap-4 mt-10"> 
+
+ 
+
+<a 
+
+[href]="project.liveLink" 
+
+target="_blank" 
+
+class="bg-black text-white px-6 py-3 rounded-2xl font-semibold hover:bg-gray-800 transition-all duration-300" 
+
+> 
+
+🚀 Live Demo 
+
+</a> 
+
+ 
+
+<a 
+
+[href]="project.gitHubLink" 
+
+target="_blank" 
+
+class="border-2 border-black text-black px-6 py-3 rounded-2xl font-semibold hover:bg-black hover:text-white transition-all duration-300" 
+
+> 
+
+💻 GitHub Repo 
+
+</a> 
+
+ 
+
+</div> 
+
+ 
+
+</div> 
+
+ 
+
+</div> 
+
+ 
+
+<!-- Comments Section --> 
+
+<app-comment></app-comment>
+
+ 
+
+</div> 
+
+ 
+
+</div> 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
