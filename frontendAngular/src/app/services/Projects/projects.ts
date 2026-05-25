@@ -1,6 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
+import { shareReplay, tap } from 'rxjs/operators';
 import { addProjectTemplate, projectTemplate, realProjectTemplate } from './projectTemplate';
 import { environment } from '../../../environments/environment';
 
@@ -10,14 +11,21 @@ import { environment } from '../../../environments/environment';
 export class Projects {
   constructor(private http:HttpClient){}
   url:string = environment.backendUrl
+  private projectsCache$?: Observable<realProjectTemplate>;
 
   
-  getAllProjects(page: number = 1, limit: number = 10, search?: string):Observable<realProjectTemplate>{
-    let url = `${this.url}/project/?page=${page}&limit=${limit}`;
-    if (search) {
-      url += `&search=${encodeURIComponent(search)}`;
+  getAllProjects():Observable<realProjectTemplate>{
+    if (!this.projectsCache$) {
+      this.projectsCache$ = this.http.get<realProjectTemplate>(`${this.url}/project/`).pipe(
+        shareReplay({ bufferSize: 1, refCount: true })
+      );
     }
-    return this.http.get<realProjectTemplate>(url);
+
+    return this.projectsCache$;
+  }
+
+  clearProjectsCache() {
+    this.projectsCache$ = undefined;
   }
 
   createProject(projectData:addProjectTemplate):Observable<any>{
@@ -47,7 +55,7 @@ export class Projects {
       headers: {
         Authorization: `Bearer ${token}`
       }
-    });
+    }).pipe(tap(() => this.clearProjectsCache()));
   }
 
   getProjectById(id:Number):Observable<{project:projectTemplate}>{

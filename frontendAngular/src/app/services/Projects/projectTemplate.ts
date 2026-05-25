@@ -6,11 +6,11 @@ export interface projectTemplate{
     liveLink?:string,
     gitHubLink?:string,
     tags?:string[],
-    owner:string,
+    owner?:string,
     likes?: string[],
     likeCount?: number,
     likedByMe?: boolean,
-    comments:Comment[]
+    comments?:Comment[]
 }
 
 export interface Comment{
@@ -43,10 +43,6 @@ export interface Reply{
 
 export interface realProjectTemplate{
     count:number,
-    totalCount?: number,
-    page?: number,
-    limit?: number,
-    totalPages?: number,
     projects:projectTemplate[]
 }
 
