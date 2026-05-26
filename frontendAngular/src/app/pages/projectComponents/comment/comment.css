@@ -5,6 +5,48 @@
   gap: 0.5rem;
 }
 
+/* Map existing utility classes in the comments template to theme tokens. */
+:host .bg-white {
+  background-color: var(--surface-primary) !important;
+}
+
+:host .bg-gray-50 {
+  background-color: color-mix(in srgb, var(--surface-secondary) 86%, var(--surface-primary)) !important;
+}
+
+:host .text-gray-900,
+:host .text-gray-800 {
+  color: var(--text-primary) !important;
+}
+
+:host .text-gray-700,
+:host .text-gray-600 {
+  color: var(--text-secondary) !important;
+}
+
+:host .text-gray-500 {
+  color: var(--text-muted) !important;
+}
+
+:host .border-gray-300,
+:host .border-gray-200 {
+  border-color: var(--border-color) !important;
+}
+
+:host .border-l-2.border-gray-300 {
+  border-left-color: var(--border-color) !important;
+}
+
+:host textarea {
+  background: var(--surface-primary) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border-color) !important;
+}
+
+:host textarea:focus {
+  box-shadow: 0 0 0 0.2rem color-mix(in srgb, var(--text-primary) 12%, transparent) !important;
+}
+
 .reply-loader__svg {
   width: 1.2rem;
   height: 1.2rem;
@@ -19,11 +61,11 @@
 }
 
 .reply-loader__track {
-  stroke: rgba(21, 32, 56, 0.15);
+  stroke: color-mix(in srgb, var(--text-primary) 16%, transparent);
 }
 
 .reply-loader__spinner {
-  stroke: #152038;
+  stroke: var(--text-primary);
   stroke-dasharray: 90;
   stroke-dashoffset: 60;
 }
@@ -31,7 +73,7 @@
 .reply-loader__text {
   font-size: 0.875rem;
   font-weight: 600;
-  color: #152038;
+  color: var(--text-primary);
   margin: 0;
 }
 

@@ -1,0 +1,8 @@
+.app-footer {
+	border-top: 1px solid var(--border-color);
+	background: var(--surface-primary);
+}
+
+.app-footer__content {
+	color: var(--text-muted);
+}

@@ -1,0 +1,50 @@
+:host {
+	display: block;
+}
+
+/* Map existing utility classes in this template to theme tokens. */
+:host .bg-gray-100 {
+	background-color: var(--surface-secondary) !important;
+}
+
+:host .bg-white {
+	background-color: var(--surface-primary) !important;
+}
+
+:host .text-gray-900 {
+	color: var(--text-primary) !important;
+}
+
+:host .text-gray-700,
+:host .text-gray-600 {
+	color: var(--text-secondary) !important;
+}
+
+:host .border-gray-300,
+:host .border-gray-200 {
+	border-color: var(--border-color) !important;
+}
+
+:host .shadow-2xl {
+	box-shadow: 0 22px 54px var(--shadow-strong) !important;
+}
+
+:host .bg-red-100 {
+	background-color: color-mix(in srgb, #ef4444 18%, var(--surface-primary)) !important;
+}
+
+:host .text-red-600 {
+	color: #ef4444 !important;
+}
+
+:host .bg-black {
+	background-color: #111827 !important;
+}
+
+:host .text-black {
+	color: var(--text-primary) !important;
+}
+
+:host .border-black {
+	border-color: var(--text-primary) !important;
+}

@@ -1,14 +1,15 @@
-import { Component, signal } from '@angular/core';
+import { Component, signal, Signal } from '@angular/core';
 import { Login } from '../../services/login/login';
 import { Register } from '../../services/register/register';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../services/auth/auth-service';
+import { ThemeToggle } from '../../components/theme-toggle/theme-toggle';
 
 
 @Component({
   selector: 'app-login-page',
-  imports: [CommonModule],
+  imports: [CommonModule, ThemeToggle],
   templateUrl: './login-page.html',
   styleUrl: './login-page.css',
 })
@@ -30,7 +31,7 @@ export class LoginPage {
     private registerFunction: Register,
     private router: Router,
     private authService:AuthService
-  ) { }
+  ) {}
 
   setEmail(event: Event) {
     const target = event.target as HTMLInputElement;

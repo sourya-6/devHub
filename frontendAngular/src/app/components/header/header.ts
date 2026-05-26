@@ -3,11 +3,12 @@ import { Component, OnDestroy, OnInit, Signal, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { AppNotification, NotificationService } from '../../services/notifications/notifications';
 import { AuthService } from '../../services/auth/auth-service';
+import { ThemeToggle } from '../theme-toggle/theme-toggle';
 
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, ThemeToggle],
   templateUrl: './header.html',
   styleUrl: './header.css',
 })
@@ -19,7 +20,8 @@ export class Header implements OnInit, OnDestroy {
   constructor(
     private router: Router,
     private notificationService: NotificationService,
-    private authService: AuthService
+    private authService: AuthService,
+    
   ) {
     this.notifications = this.notificationService.notifications;
     this.unreadCount = this.notificationService.unreadCount;

@@ -2,11 +2,11 @@
 .comment-composer {
 	margin-top: 1rem;
 	padding: 1.25rem;
-	border: 1px solid #e5e7eb;
+	border: 1px solid var(--border-color);
 	border-radius: 1.25rem;
 	background:
-		radial-gradient(circle at top right, rgba(59, 130, 246, 0.08), transparent 28%),
-		linear-gradient(180deg, #ffffff 0%, #f9fafb 100%);
+		radial-gradient(circle at top right, color-mix(in srgb, var(--accent) 16%, transparent), transparent 28%),
+		linear-gradient(180deg, var(--surface-primary) 0%, color-mix(in srgb, var(--surface-secondary) 86%, var(--surface-primary)) 100%);
 	box-shadow: 0 14px 35px rgba(15, 23, 42, 0.06);
 }
 
@@ -31,14 +31,14 @@
 	margin: 0;
 	font-size: 1.1rem;
 	font-weight: 700;
-	color: #111827;
+	color: var(--text-primary);
 }
 
 .comment-composer__counter {
 	padding: 0.35rem 0.6rem;
 	border-radius: 999px;
-	background: #eff6ff;
-	color: #1d4ed8;
+	background: color-mix(in srgb, var(--accent) 18%, var(--surface-primary));
+	color: var(--accent);
 	font-size: 0.78rem;
 	font-weight: 600;
 	white-space: nowrap;
@@ -48,26 +48,26 @@
 	width: 100%;
 	min-height: 110px;
 	resize: vertical;
-	border: 1px solid #d1d5db;
+	border: 1px solid var(--border-color);
 	border-radius: 1rem;
 	padding: 0.95rem 1rem;
-	background: #fff;
-	color: #111827;
+	background: var(--surface-primary);
+	color: var(--text-primary);
 	outline: none;
 	transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
 }
 
 .comment-composer__textarea::placeholder {
-	color: #9ca3af;
+	color: var(--text-muted);
 }
 
 .comment-composer__textarea:focus {
-	border-color: #2563eb;
-	box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+	border-color: var(--accent);
+	box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 18%, transparent);
 }
 
 .comment-composer__textarea:disabled {
-	background: #f9fafb;
+	background: color-mix(in srgb, var(--surface-secondary) 85%, var(--surface-primary));
 	cursor: not-allowed;
 }
 
@@ -82,7 +82,7 @@
 
 .comment-composer__hint {
 	margin: 0;
-	color: #6b7280;
+	color: var(--text-muted);
 	font-size: 0.9rem;
 }
 

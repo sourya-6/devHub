@@ -1,0 +1,8 @@
+.profile-page{max-width:720px;margin:24px auto;padding:16px;background:var(--surface-secondary);border-radius:8px}
+.profile-page h2{margin-bottom:12px}
+.profile-page label{display:block;margin-top:8px;font-weight:600}
+.profile-page input[type=text],.profile-page textarea{width:100%;padding:8px;margin-top:6px;border:1px solid rgba(0,0,0,0.08);border-radius:6px;background:var(--surface-primary);color:var(--text-primary)}
+.profile-page textarea{min-height:120px}
+.preview-wrap{margin-top:8px}
+.preview-wrap img{width:96px;height:96px;object-fit:cover;border-radius:50%}
+.profile-page button{margin-top:12px;padding:10px 14px;background:var(--accent);color:white;border:none;border-radius:6px}

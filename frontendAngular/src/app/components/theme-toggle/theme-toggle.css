@@ -1,0 +1,60 @@
+:host {
+  display: inline-block;
+}
+
+.theme-switch {
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+.track {
+  width: 56px;
+  height: 30px;
+  border-radius: 999px;
+  padding: 4px;
+  box-sizing: border-box;
+  background: color-mix(in srgb, var(--text-muted) 12%, var(--surface-primary));
+  display: flex;
+  align-items: center;
+  position: relative;
+  transition: background 220ms ease;
+}
+
+.track--dark {
+  background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 24%, transparent), var(--surface-primary));
+}
+
+.icons {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 6px;
+  pointer-events: none;
+  color: var(--text-muted);
+}
+
+.icon {
+  width: 16px;
+  height: 16px;
+}
+
+.icon-sun { color: #fbbf24; }
+.icon-moon { color: #94a3b8; }
+
+.thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: var(--surface-primary);
+  box-shadow: 0 6px 16px color-mix(in srgb, var(--shadow-strong) 70%, transparent);
+  transform: translateX(0);
+  transition: transform 240ms cubic-bezier(.2,.9,.2,1), background 180ms ease;
+}
+
+.thumb--right {
+  transform: translateX(26px);
+}

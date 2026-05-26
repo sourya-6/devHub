@@ -1,14 +1,16 @@
-<header class="sticky top-0 z-50 border-b border-gray-200 bg-white/90 backdrop-blur">
+<header class="app-header sticky top-0 z-50 backdrop-blur">
 	<div class="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
-		<a routerLink="/dashbord" class="flex items-center gap-3 text-gray-900">
+		<a routerLink="/dashbord" class="brand-link flex items-center gap-3">
 			<div class="flex h-10 w-10 items-center justify-center rounded-2xl bg-black text-lg font-bold text-white">D</div>
 			<div>
-				<p class="text-sm uppercase tracking-[0.35em] text-gray-500">DevHub</p>
+				<p class="brand-eyebrow text-sm uppercase tracking-[0.35em]">DevHub</p>
 				<h1 class="text-lg font-bold">Project Hub</h1>
 			</div>
 		</a>
 
 		<nav class="header-nav flex items-center gap-2 sm:gap-3">
+			<app-theme-toggle></app-theme-toggle>
+
 			<div *ngIf="isLoggedIn()" class="relative">
 				<button
 					type="button"
@@ -57,8 +59,8 @@
 				}
 			</div>
 
-			<a *ngIf="isLoggedIn()" routerLink="/dashbord" class="rounded-xl px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-100 hover:text-black transition">Dashboard</a>
-			<a *ngIf="isLoggedIn()" routerLink="/add-project" class="rounded-xl px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-100 hover:text-black transition">Add Project</a>
+			<a *ngIf="isLoggedIn()" routerLink="/dashbord" class="nav-link rounded-xl px-4 py-2 text-sm font-semibold transition">Dashboard</a>
+			<a *ngIf="isLoggedIn()" routerLink="/add-project" class="nav-link rounded-xl px-4 py-2 text-sm font-semibold transition">Add Project</a>
 			<a *ngIf="!isLoggedIn()" routerLink="/" class="rounded-xl bg-black px-4 py-2 text-sm font-semibold text-white hover:bg-gray-800 transition">Login</a>
 			<button
 				*ngIf="isLoggedIn()"

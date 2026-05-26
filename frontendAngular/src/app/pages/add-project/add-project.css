@@ -1,0 +1,29 @@
+/* Theme token mapping for Add Project page */
+:host {
+	display: block;
+}
+
+/* Map utility colors to theme tokens */
+:host .bg-gray-100 { background-color: var(--surface-secondary) !important; }
+:host .bg-white { background-color: var(--surface-primary) !important; }
+:host .text-gray-900 { color: var(--text-primary) !important; }
+:host .text-gray-700, :host .text-gray-600 { color: var(--text-secondary) !important; }
+:host .text-gray-500 { color: var(--text-muted) !important; }
+:host .border-gray-300 { border-color: var(--border-color) !important; }
+:host .rounded-3xl { border-radius: 1rem; }
+
+input, textarea, select, .file-input {
+	background: var(--surface-primary) !important;
+	color: var(--text-primary) !important;
+	border-color: var(--border-color) !important;
+}
+
+input:focus, textarea:focus {
+	box-shadow: 0 0 0 0.2rem color-mix(in srgb, var(--text-primary) 8%, transparent) !important;
+	border-color: var(--accent) !important;
+}
+
+.shadow-2xl { box-shadow: 0 22px 54px var(--shadow-strong) !important; }
+
+.btn-primary { background: #111827; color: #fff; }
+

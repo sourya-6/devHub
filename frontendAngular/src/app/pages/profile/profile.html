@@ -1,0 +1,26 @@
+<div class="profile-page">
+  <h2>Edit Profile</h2>
+
+  <label>Bio</label>
+  <textarea (input)="setBio($event)" [value]="bio()"></textarea>
+
+  <label>Skills (comma separated)</label>
+  <input type="text" (input)="setSkills($event)" [value]="skills()" />
+
+  <label>GitHub</label>
+  <input type="text" (input)="setGithub($event)" [value]="github()" />
+
+  <label>LinkedIn</label>
+  <input type="text" (input)="setLinkedin($event)" [value]="linkedin()" />
+
+  <label>Website</label>
+  <input type="text" (input)="setWebsite($event)" [value]="website()" />
+
+  <label>Avatar</label>
+  <input type="file" (change)="onFileChange($event)" accept="image/*" />
+  <div *ngIf="avatarPreview()" class="preview-wrap">
+    <img [src]="avatarPreview()" alt="avatar preview" />
+  </div>
+
+  <button (click)="saveProfile()">Save Profile</button>
+</div>

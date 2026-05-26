@@ -10,6 +10,7 @@ import {
 import { filter } from 'rxjs';
 import { Header } from './components/header/header';
 import { Footer } from './components/footer/footer';
+import { ThemeService } from './services/theme/theme.service';
 
 @Component({
   selector: 'app-root',
@@ -24,7 +25,8 @@ export class App {
   currentUrl = signal('');
   isNavigating = signal(false);
 
-  constructor(private router: Router) {
+  constructor(private router: Router, private themeService: ThemeService) {
+    this.themeService.currentTheme();
     this.currentUrl.set(this.router.url);
 
     this.router.events

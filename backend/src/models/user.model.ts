@@ -42,6 +42,20 @@ const userSchema = new mongoose.Schema<IUser>({
         type:String,
         default:""
     }
+    ,
+    bio: {
+        type: String,
+        default: ''
+    },
+    skills: {
+        type: [String],
+        default: []
+    },
+    links: {
+        github: { type: String, default: '' },
+        linkedin: { type: String, default: '' },
+        website: { type: String, default: '' }
+    }
 },{
     timestamps:true
 })

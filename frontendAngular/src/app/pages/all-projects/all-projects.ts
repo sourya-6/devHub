@@ -19,9 +19,11 @@ import {
   styleUrl: './all-projects.css',
 })
 export class AllProjects implements OnInit {
+  private readonly onboardingStorageKey = 'devhub.onboarding.complete';
 
   projects: projectTemplate[] = [];
   searchQuery = '';
+  showOnboarding = false;
 
   loading:boolean = true;
   itemsPerRow = 3;
@@ -34,7 +36,8 @@ export class AllProjects implements OnInit {
     
     this.projects = data.projects;
     this.updateItemsPerRow();
-    this.loading = false
+    this.loading = false;
+    this.showOnboarding = localStorage.getItem(this.onboardingStorageKey) !== 'true';
   }
 
   @HostListener('window:resize')
@@ -83,6 +86,15 @@ export class AllProjects implements OnInit {
     } else {
       this.itemsPerRow = 3;
     }
+  }
+
+  dismissOnboarding() {
+    this.showOnboarding = false;
+  }
+
+  completeOnboarding() {
+    localStorage.setItem(this.onboardingStorageKey, 'true');
+    this.showOnboarding = false;
   }
 
 }

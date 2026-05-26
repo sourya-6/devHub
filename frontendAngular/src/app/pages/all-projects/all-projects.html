@@ -1,10 +1,10 @@
-<div class="min-h-screen bg-gray-100 p-8">
+<div class="projects-page min-h-screen p-8">
 
   @if(loading){
 
     <div class="flex items-center justify-center h-[70vh]">
 
-      <p class="text-2xl font-semibold text-gray-600 animate-pulse">
+      <p class="text-2xl font-semibold animate-pulse">
         Loading Projects...
       </p>
 
@@ -16,12 +16,29 @@
 
     <div class="max-w-5xl mx-auto">
 
+      @if (showOnboarding) {
+        <section class="onboarding-banner mb-8">
+          <div>
+            <p class="onboarding-banner__eyebrow">Welcome to DevHub</p>
+            <h2 class="onboarding-banner__title">Set up your workspace in 60 seconds.</h2>
+            <p class="onboarding-banner__text">Create your first project, add useful tags, and publish a live or GitHub link so people can discover your work.</p>
+          </div>
+          <button
+            type="button"
+            class="onboarding-banner__button"
+            (click)="completeOnboarding()"
+          >
+            Got it
+          </button>
+        </section>
+      }
+
       <div class="flex items-center justify-between flex-wrap gap-4 mb-8">
         <div>
-          <h1 class="text-4xl font-bold text-gray-800">
+          <h1 class="text-4xl font-bold projects-page__heading">
             All Projects
           </h1>
-          <p class="text-gray-600 mt-2">
+          <p class="projects-page__subheading mt-2">
             Search by title, description, tags, GitHub link, or live link.
           </p>
         </div>
@@ -39,14 +56,14 @@
           type="search"
           [(ngModel)]="searchQuery"
           placeholder="Search projects..."
-          class="w-full rounded-2xl border border-gray-300 bg-white px-5 py-4 text-gray-800 shadow-sm outline-none transition duration-300 focus:border-black focus:ring-2 focus:ring-black/10"
+          class="project-search-input w-full rounded-2xl px-5 py-4 shadow-sm outline-none transition duration-300 focus:ring-2"
         />
       </div>
 
       @if (!filteredProjects.length) {
-        <div class="rounded-3xl border border-dashed border-gray-300 bg-white px-6 py-12 text-center shadow-sm">
-          <h2 class="text-2xl font-semibold text-gray-800">No projects found</h2>
-          <p class="mt-2 text-gray-600">
+        <div class="empty-state rounded-3xl border border-dashed px-6 py-12 text-center shadow-sm">
+          <h2 class="text-2xl font-semibold">No projects found</h2>
+          <p class="mt-2">
             Try a different keyword or clear the search box.
           </p>
         </div>
@@ -54,32 +71,41 @@
 
       @else {
         <cdk-virtual-scroll-viewport itemSize="260" class="h-[calc(100vh-300px)] rounded-2xl">
-          <div *cdkVirtualFor="let row of projectRows" class="pb-6">
-            <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              <div
-                *ngFor="let project of row"
-                class="flex min-h-56 flex-col rounded-2xl border border-gray-200 bg-white p-6 shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl"
-              >
 
-                <h2 class="mb-3 line-clamp-2 min-h-16 text-2xl font-bold text-gray-800">
-                  {{ project.title }}
-                </h2>
+  <div *cdkVirtualFor="let row of projectRows" class="pb-6">
 
-                <p class="mb-5 min-h-18 flex-1 line-clamp-3 text-gray-600">
-                  {{ project.description }}
-                </p>
+    <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
 
-                <a
-                  [routerLink]="['/project', project._id]"
-                  class="mt-auto inline-flex w-fit bg-black text-white px-5 py-2 rounded-xl hover:bg-gray-800 transition-all duration-300"
-                >
-                  View Project
-                </a>
+      @for (project of row; track project._id) {
 
-              </div>
-            </div>
-          </div>
-        </cdk-virtual-scroll-viewport>
+        <div
+          class="project-card flex min-h-56 flex-col rounded-2xl border p-6 shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl"
+        >
+
+          <h2 class="project-card__title mb-3 line-clamp-2 min-h-16 text-2xl font-bold">
+            {{ project.title }}
+          </h2>
+
+          <p class="project-card__description mb-5 min-h-18 flex-1 line-clamp-3">
+            {{ project.description }}
+          </p>
+
+          <a
+            [routerLink]="['/project', project._id]"
+            class="mt-auto inline-flex w-fit bg-black text-white px-5 py-2 rounded-xl hover:bg-gray-800 transition-all duration-300"
+          >
+            View Project
+          </a>
+
+        </div>
+
+      }
+
+    </div>
+
+  </div>
+
+</cdk-virtual-scroll-viewport>
       }
 
     </div>
@@ -87,3 +113,19 @@
   }
 
 </div>
+
+@if (showOnboarding) {
+  <div class="onboarding-modal" role="dialog" aria-modal="true" aria-labelledby="onboarding-title">
+    <div class="onboarding-modal__card">
+      <button type="button" class="onboarding-modal__close" (click)="dismissOnboarding()" aria-label="Close onboarding">x</button>
+      <p class="onboarding-modal__eyebrow">New here?</p>
+      <h3 id="onboarding-title" class="onboarding-modal__title">Quick start checklist</h3>
+      <ul class="onboarding-modal__list">
+        <li>Add your first project from the Add Project page.</li>
+        <li>Use clear tags so others can find your project faster.</li>
+        <li>Open notifications in the header to track new activity.</li>
+      </ul>
+      <button type="button" class="onboarding-modal__cta" (click)="completeOnboarding()">Complete onboarding</button>
+    </div>
+  </div>
+}

@@ -2,7 +2,7 @@
 :host {
 	display: block;
 	min-height: 100vh;
-	background: #f7f7fb;
+	background: var(--surface-secondary);
 }
 
 .route-loader {
@@ -11,7 +11,7 @@
 	z-index: 1000;
 	display: grid;
 	place-items: center;
-	background: rgba(10, 12, 20, 0.28);
+	background: color-mix(in srgb, #050810 30%, transparent);
 	backdrop-filter: blur(6px);
 	-webkit-backdrop-filter: blur(6px);
 }
@@ -22,7 +22,7 @@
 	gap: 0.9rem;
 	padding: 1.25rem 1.5rem;
 	border-radius: 1rem;
-	background: rgba(255, 255, 255, 0.9);
+	background: color-mix(in srgb, var(--surface-primary) 92%, transparent);
 	box-shadow: 0 20px 60px rgba(10, 12, 20, 0.18);
 	min-width: 10rem;
 }
@@ -41,11 +41,11 @@
 }
 
 .route-loader__track {
-	stroke: rgba(21, 32, 56, 0.15);
+	stroke: color-mix(in srgb, var(--text-primary) 16%, transparent);
 }
 
 .route-loader__spinner {
-	stroke: #152038;
+	stroke: var(--text-primary);
 	stroke-dasharray: 90;
 	stroke-dashoffset: 60;
 }
@@ -54,7 +54,7 @@
 	margin: 0;
 	font-size: 0.95rem;
 	font-weight: 600;
-	color: #152038;
+	color: var(--text-primary);
 }
 
 @keyframes route-loader-rotate {

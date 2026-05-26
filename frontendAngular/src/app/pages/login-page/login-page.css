@@ -1,0 +1,39 @@
+/* Theme token mapping for Login page */
+:host { display: block; }
+
+:host .min-h-screen { background: var(--surface-secondary) !important; }
+:host .bg-white { background: var(--surface-primary) !important; }
+:host .text-gray-800, :host .text-gray-900 { color: var(--text-primary) !important; }
+:host .text-gray-600, :host .text-gray-700 { color: var(--text-secondary) !important; }
+:host .border-gray-300 { border-color: var(--border-color) !important; }
+
+input {
+	background: var(--surface-primary) !important;
+	color: var(--text-primary) !important;
+	border-color: var(--border-color) !important;
+}
+
+input:focus {
+	box-shadow: 0 0 0 0.2rem color-mix(in srgb, var(--accent) 12%, transparent) !important;
+	border-color: var(--accent) !important;
+}
+
+.btn-login { background: #111827; color: #fff; }
+
+.theme-toggle-login {
+	position: absolute;
+	right: 0.75rem;
+	top: -0.75rem;
+	width: 2.5rem;
+	height: 2.5rem;
+	display: inline-grid;
+	place-items: center;
+	border-radius: 0.65rem;
+	border: 1px solid var(--border-color);
+	background: var(--surface-primary);
+	color: var(--text-primary);
+	box-shadow: 0 8px 18px var(--shadow-strong);
+}
+
+.theme-toggle-login svg { display: block; }
+

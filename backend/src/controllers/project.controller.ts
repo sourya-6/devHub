@@ -6,8 +6,7 @@ import mongoose from "mongoose"
 import jwt from "jsonwebtoken"
 import { publish, subscribe } from "../sse/sse.js";
 import { createNotification } from "../utils/notifications.js";
-import { log } from "node:console"
-// import { log } from "node:console"
+
 
 const getParamValue = (value: unknown): string | undefined => {
     if (Array.isArray(value)) {
@@ -80,6 +79,10 @@ const createProject = async(req:AuthRequest,
 }
 
 const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const getNotificationPreview = (value: string, maxLength = 80) => {
+    const normalized = value.replace(/\s+/g, ' ').trim();
+    return normalized.length > maxLength ? `${normalized.slice(0, maxLength - 3)}...` : normalized;
+}
 
 const getAllProjects = async(req:AuthRequest,
     res:Response
@@ -308,14 +311,15 @@ const postComment = async(req:AuthRequest, res:Response):Promise<Response> =>{
             });
         }
 
-                void createNotification({
-          userId: project.owner,
-          actorId: req.user._id,
-          projectId: project._id,
-          type: 'comment',
-          message: `${req.user.name} commented on your project "${project.title}"`,
-                    commentId: createdComment?._id ?? null,
-                }).catch((error) => console.error('Failed to create comment notification', error));
+        const commentPreview = getNotificationPreview(text);
+        void createNotification({
+            userId: project.owner,
+            actorId: req.user._id,
+            projectId: project._id,
+            type: 'comment',
+            message: `${req.user.name} commented on "${project.title}": "${commentPreview}"`,
+            commentId: createdComment?._id ?? null,
+        }).catch((error) => console.error('Failed to create comment notification', error));
 
         return res.status(201).json({
             message:"Comment Added Successfully",
@@ -504,12 +508,13 @@ const replyComment = async(req:AuthRequest,res:Response):Promise<Response> =>{
         }
 
         if (comment.user) {
+            const replyPreview = getNotificationPreview(text);
             void createNotification({
                 userId: comment.user,
                 actorId: req.user._id,
                 projectId: project._id,
                 type: 'reply',
-                message: `${req.user.name} replied to your comment on "${project.title}"`,
+                message: `${req.user.name} replied to your comment on "${project.title}": "${replyPreview}"`,
                 commentId,
                 replyId: createdReply?._id ?? null,
             }).catch((error) => console.error('Failed to create reply notification', error));

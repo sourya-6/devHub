@@ -72,6 +72,25 @@ const googleAuthUser = async (
     });
   }
 };
+const updateProfile = async (req: Request, res: Response) => {
+    try {
+        const userId = (req as any).userId;
+        const { bio, skills, links } = req.body;
+        const update: any = {};
+        if (bio !== undefined) update.bio = bio;
+        if (skills !== undefined) update.skills = Array.isArray(skills) ? skills : (typeof skills === 'string' ? skills.split(',').map(s=>s.trim()).filter(Boolean) : []);
+        if (links !== undefined) {
+            // accept object or JSON string
+            if (typeof links === 'string') {
+                try { update.links = JSON.parse(links); } catch { update.links = {} }
+            } else update.links = links;
+        }
+        const user = await User.findByIdAndUpdate(userId, update, { new: true });
+        res.json({ user });
+    } catch (error) {
+        res.status(500).json({ message: 'Error updating profile', error });
+    }
+};
 
 const registerUser = async(req:Request<{},{},RegisterBody>, res:Response):Promise<Response> =>{
     try {
@@ -255,5 +274,6 @@ export{
     loginUser,
     logoutUser,
     uploadAvatar,
-    googleAuthUser
+    googleAuthUser,
+    updateProfile
 }

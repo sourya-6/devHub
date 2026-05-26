@@ -28,5 +28,10 @@ export const routes: Routes = [
       import('./pages/add-project/add-project').then((m) => m.AddProject),
     canActivate: [authGuard],
   },
+  {
+    path: 'profile',
+    loadComponent: () => import('./pages/profile/profile').then((m) => m.ProfilePage),
+    canActivate: [authGuard],
+  },
   { path: 'project/:id', component: ProjectById, resolve: { projectData: projectByIdResolver } },
 ];
