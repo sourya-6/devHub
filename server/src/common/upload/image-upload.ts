@@ -17,7 +17,7 @@ export const multerImageOptions = {
       cb(null, `${file.fieldname}-${uniqueSuffix}${extension}`);
     },
   }),
-  fileFilter: (_req, file, cb) => {
+  fileFilter: (_req: any, file: any, cb: any) => {
     const allowedTypes = /jpeg|jpg|png|gif/;
     const extension = path.extname(file.originalname).toLowerCase();
 
@@ -31,4 +31,4 @@ export const multerImageOptions = {
   limits: {
     fileSize: 10 * 1024 * 1024,
   },
-} as const;
+};

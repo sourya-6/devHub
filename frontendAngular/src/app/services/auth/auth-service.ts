@@ -1,7 +1,9 @@
-import { Injectable } from '@angular/core';
+import { Injectable, NgZone } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { firstValueFrom } from 'rxjs';
+import { Router } from '@angular/router';
+import { NotificationService } from '../notifications/notifications';
 
 interface GoogleAuthResponse {
   token?: string;
@@ -26,32 +28,78 @@ interface GoogleAuthPayload {
 })
 export class AuthService {
   private googleScriptLoaded = false;
+  private googleScriptPromise?: Promise<void>;
 
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient,
+    private router: Router,
+    private zone: NgZone,
+    private notificationService: NotificationService,
+  ) {}
+
+  private connectNotifications() {
+    queueMicrotask(() => this.notificationService.connect());
+  }
 
   /**
    * Initialize Google Sign-In library
    * Load the Google Identity Services script for OAuth flow
    */
-  initializeGoogleSignIn() {
-    if (this.googleScriptLoaded) return;
+  initializeGoogleSignIn(): Promise<void> {
+    if (this.googleScriptLoaded) {
+      return Promise.resolve();
+    }
 
-    const script = document.createElement('script');
-    script.src = 'https://accounts.google.com/gsi/client';
-    script.async = true;
-    script.defer = true;
-    script.onload = () => {
-      console.log('Google Sign-In library loaded');
-      // Initialize Google Sign-In with client ID from environment
-      if (window['google']?.accounts?.id && environment.googleClientId && environment.googleClientId !== 'YOUR_GOOGLE_CLIENT_ID_HERE') {
-        window['google'].accounts.id.initialize({
+    if (this.googleScriptPromise) {
+      return this.googleScriptPromise;
+    }
+
+    this.googleScriptPromise = new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = 'https://accounts.google.com/gsi/client';
+      script.async = true;
+      script.defer = true;
+      script.onload = () => {
+        console.log('Google Sign-In library loaded');
+
+        if (!environment.googleClientId || environment.googleClientId === 'YOUR_GOOGLE_CLIENT_ID_HERE') {
+          reject(new Error('Google client ID is not configured'));
+          return;
+        }
+
+        if (!(window as any).google?.accounts?.id) {
+          reject(new Error('Google Sign-In library is unavailable'));
+          return;
+        }
+
+        (window as any).google.accounts.id.initialize({
           client_id: environment.googleClientId,
           callback: this.handleGoogleSignInResponse.bind(this),
         });
+
+        this.googleScriptLoaded = true;
+        resolve();
+      };
+      script.onerror = () => reject(new Error('Failed to load Google Sign-In library'));
+      document.head.appendChild(script);
+    });
+
+    return this.googleScriptPromise;
+  }
+
+  async promptGoogleSignIn() {
+    await this.initializeGoogleSignIn();
+
+    const googleIdentity = (window as any).google?.accounts?.id;
+    if (!googleIdentity) {
+      throw new Error('Google Sign-In library is unavailable');
+    }
+
+    googleIdentity.prompt((notification: any) => {
+      if (notification.isNotDisplayed?.() || notification.isSkippedMoment?.()) {
+        console.warn('Google Sign-In prompt was not displayed', notification.getNotDisplayedReason?.() || notification.getSkippedReason?.());
       }
-    };
-    document.head.appendChild(script);
-    this.googleScriptLoaded = true;
+    });
   }
 
   /**
@@ -64,11 +112,17 @@ export class AuthService {
         // Decode JWT token (without verification on client side)
         const tokenPayload = this.decodeGoogleToken(response.credential);
         if (tokenPayload) {
-          await this.loginWithGoogle({
+          const loginResponse = await this.loginWithGoogle({
             email: tokenPayload.email,
             name: tokenPayload.name,
             avatar: tokenPayload.picture,
           });
+
+          if (loginResponse?.token) {
+            await this.zone.run(async () => {
+              await this.router.navigate(['/dashboard']);
+            });
+          }
         }
       } catch (error) {
         console.error('Failed to decode Google token:', error);
@@ -99,6 +153,22 @@ export class AuthService {
   }
 
   /**
+   * Accept a raw Google ID token (credential), decode it and call loginWithGoogle
+   */
+  async loginWithGoogleToken(token: string) {
+    const tokenPayload = this.decodeGoogleToken(token);
+    if (!tokenPayload) {
+      throw new Error('Invalid Google token');
+    }
+
+    return this.loginWithGoogle({
+      email: tokenPayload.email,
+      name: tokenPayload.name || tokenPayload.email?.split('@')[0],
+      avatar: tokenPayload.picture,
+    });
+  }
+
+  /**
    * Send Google user profile to backend for validation and JWT issuance
    */
   async loginWithGoogle(payload: GoogleAuthPayload) {
@@ -118,6 +188,8 @@ export class AuthService {
       if (response.user?.id) {
         localStorage.setItem('userId', response.user.id);
       }
+
+      this.connectNotifications();
 
       return response;
     } catch (error) {
@@ -146,6 +218,8 @@ export class AuthService {
       if (response.user?.id) {
         localStorage.setItem('userId', response.user.id);
       }
+
+      this.connectNotifications();
 
       return response;
     } catch (error) {
@@ -179,6 +253,8 @@ export class AuthService {
       if (response.user?.id) {
         localStorage.setItem('userId', response.user.id);
       }
+
+      this.connectNotifications();
 
       return response;
     } catch (error) {

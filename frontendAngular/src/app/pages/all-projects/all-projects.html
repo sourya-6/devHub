@@ -55,10 +55,23 @@
         <input
           type="search"
           [(ngModel)]="searchQuery"
+          (keyup.enter)="onSearch()"
           placeholder="Search projects..."
           class="project-search-input w-full rounded-2xl px-5 py-4 shadow-sm outline-none transition duration-300 focus:ring-2"
         />
       </div>
+
+      @if (pageLoading) {
+        <p class="projects-page__status mb-4 text-sm font-semibold">
+          Updating projects...
+        </p>
+      }
+
+      @if (errorMessage) {
+        <div class="empty-state mb-6 rounded-2xl border border-dashed px-5 py-4 text-sm font-semibold">
+          {{ errorMessage }}
+        </div>
+      }
 
       @if (!filteredProjects.length) {
         <div class="empty-state rounded-3xl border border-dashed px-6 py-12 text-center shadow-sm">
@@ -70,42 +83,55 @@
       }
 
       @else {
-        <cdk-virtual-scroll-viewport itemSize="260" class="h-[calc(100vh-300px)] rounded-2xl">
+        <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 mb-8 transition-opacity" [class.opacity-60]="pageLoading">
+          @for (project of projects; track project.id) {
+            <div
+              class="project-card flex min-h-56 flex-col rounded-2xl border p-6 shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl"
+            >
+              <h2 class="project-card__title mb-3 line-clamp-2 min-h-16 text-2xl font-bold">
+                {{ project.title }}
+              </h2>
 
-  <div *cdkVirtualFor="let row of projectRows" class="pb-6">
+              <p class="project-card__description mb-5 min-h-18 flex-1 line-clamp-3">
+                {{ project.description }}
+              </p>
 
-    <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-
-      @for (project of row; track project._id) {
-
-        <div
-          class="project-card flex min-h-56 flex-col rounded-2xl border p-6 shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl"
-        >
-
-          <h2 class="project-card__title mb-3 line-clamp-2 min-h-16 text-2xl font-bold">
-            {{ project.title }}
-          </h2>
-
-          <p class="project-card__description mb-5 min-h-18 flex-1 line-clamp-3">
-            {{ project.description }}
-          </p>
-
-          <a
-            [routerLink]="['/project', project._id]"
-            class="mt-auto inline-flex w-fit bg-black text-white px-5 py-2 rounded-xl hover:bg-gray-800 transition-all duration-300"
-          >
-            View Project
-          </a>
-
+              <a
+                [routerLink]="['/project', project.id]"
+                class="mt-auto inline-flex w-fit bg-black text-white px-5 py-2 rounded-xl hover:bg-gray-800 transition-all duration-300"
+              >
+                View Project
+              </a>
+            </div>
+          }
         </div>
 
-      }
+        <!-- Pagination Controls -->
+        <div class="flex items-center justify-between rounded-2xl border p-6 shadow-md">
+          <button
+            (click)="prevPage()"
+            [disabled]="!canPrevPage()"
+            class="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+          >
+            ← Previous
+          </button>
 
-    </div>
+          <div class="flex items-center gap-2">
+            <span class="text-sm font-semibold">
+              @if (paginationData) {
+                Page {{ paginationData.pagination.page }} of {{ paginationData.pagination.totalPages }}
+              }
+            </span>
+          </div>
 
-  </div>
-
-</cdk-virtual-scroll-viewport>
+          <button
+            (click)="nextPage()"
+            [disabled]="!canNextPage()"
+            class="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+          >
+            Next →
+          </button>
+        </div>
       }
 
     </div>

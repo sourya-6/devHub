@@ -4,6 +4,7 @@ import { LoginResponse, User } from './user';
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
+import { NotificationService } from '../notifications/notifications';
 
 @Injectable({
   providedIn: 'root',
@@ -11,7 +12,10 @@ import { environment } from '../../../environments/environment';
 export class Login {
   status: boolean = false;
   private readonly baseUrl = environment.backendUrl;
-  constructor(private http: HttpClient) { }
+  constructor(
+    private http: HttpClient,
+    private notificationService: NotificationService,
+  ) { }
   checkLogin(userData: LoginTemplate): Observable<LoginResponse> {
     return this.http.post<LoginResponse>(`${this.baseUrl}/auth/login`, userData, {
       withCredentials: true,
@@ -19,6 +23,7 @@ export class Login {
       tap((item) => {
         localStorage.setItem("token",item.token);
         localStorage.setItem("userId", item.user.id);
+        queueMicrotask(() => this.notificationService.connect());
       })
     );
   }

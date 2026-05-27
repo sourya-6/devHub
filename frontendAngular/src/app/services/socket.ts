@@ -9,6 +9,11 @@ export class SocketService {
   private SOCKET_URL = environment.backendUrl;
   private currentProjectId: string | null = null;
 
+  // keep references to listeners so they can be removed later
+  private commentsListener?: (ev: any) => void;
+  private likesListener?: (ev: any) => void;
+  private repliesListener?: (ev: any) => void;
+
   constructor(private zone: NgZone) {}
 
   connectToProject(projectId: string) {
@@ -25,6 +30,11 @@ export class SocketService {
     };
 
     this.es.onerror = (err) => {
+      if (this.es?.readyState === EventSource.CLOSED) {
+        console.warn('SSE connection closed for project', projectId);
+        return;
+      }
+
       console.error('SSE error', err);
     };
   }
@@ -38,46 +48,80 @@ export class SocketService {
       }
       this.es = null;
       this.currentProjectId = null;
+      this.commentsListener = undefined;
+      this.likesListener = undefined;
+      this.repliesListener = undefined;
     }
   }
 
   onCommentsUpdated(callback: (data: any) => void) {
     if (!this.es) return;
-    this.es.addEventListener('project:comments-updated', (ev: any) => {
+    // remove existing listener if present
+    if (this.commentsListener) {
+      this.es.removeEventListener('project:comments-updated', this.commentsListener);
+      this.commentsListener = undefined;
+    }
+
+    this.commentsListener = (ev: any) => {
       const parsed = ev?.data ? JSON.parse(ev.data) : null;
       this.zone.run(() => callback(parsed));
-    });
+    };
+
+    this.es.addEventListener('project:comments-updated', this.commentsListener);
   }
 
   onLikesUpdated(callback: (data: any) => void) {
     if (!this.es) return;
-    this.es.addEventListener('project:likes-updated', (ev: any) => {
+    if (this.likesListener) {
+      this.es.removeEventListener('project:likes-updated', this.likesListener);
+      this.likesListener = undefined;
+    }
+
+    this.likesListener = (ev: any) => {
       const parsed = ev?.data ? JSON.parse(ev.data) : null;
       this.zone.run(() => callback(parsed));
-    });
+    };
+
+    this.es.addEventListener('project:likes-updated', this.likesListener);
   }
 
   onRepliesUpdated(callback: (data: any) => void) {
     if (!this.es) return;
-    this.es.addEventListener('project:replies-updated', (ev: any) => {
+    if (this.repliesListener) {
+      this.es.removeEventListener('project:replies-updated', this.repliesListener);
+      this.repliesListener = undefined;
+    }
+
+    this.repliesListener = (ev: any) => {
       const parsed = ev?.data ? JSON.parse(ev.data) : null;
       this.zone.run(() => callback(parsed));
-    });
+    };
+
+    this.es.addEventListener('project:replies-updated', this.repliesListener);
   }
 
   offCommentsUpdated() {
     if (!this.es) return;
-    this.es.removeEventListener('project:comments-updated', () => {});
+    if (this.commentsListener) {
+      this.es.removeEventListener('project:comments-updated', this.commentsListener);
+      this.commentsListener = undefined;
+    }
   }
 
   offLikesUpdated() {
     if (!this.es) return;
-    this.es.removeEventListener('project:likes-updated', () => {});
+    if (this.likesListener) {
+      this.es.removeEventListener('project:likes-updated', this.likesListener);
+      this.likesListener = undefined;
+    }
   }
 
   offRepliesUpdated() {
     if (!this.es) return;
-    this.es.removeEventListener('project:replies-updated', () => {});
+    if (this.repliesListener) {
+      this.es.removeEventListener('project:replies-updated', this.repliesListener);
+      this.repliesListener = undefined;
+    }
   }
 
   getEventSource() {

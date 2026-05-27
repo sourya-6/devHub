@@ -1,4 +1,4 @@
-import { Component, signal, Signal } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { Login } from '../../services/login/login';
 import { Register } from '../../services/register/register';
 import { Router } from '@angular/router';
@@ -64,10 +64,20 @@ export class LoginPage {
   }
 
   userLogin() {
-    const user = {
-      username: this.userName(),
-      password: this.password()
+    const identifier = this.userName().trim();
+    const password = this.password().trim();
+
+    if (!identifier || !password) {
+      alert('Please enter username/email and password');
+      return;
     }
+
+    const user = {
+      ...(identifier.includes('@')
+        ? { email: identifier.toLowerCase() }
+        : { username: identifier.toLowerCase() }),
+      password,
+    };
     this.loginFunction.checkLogin(user).subscribe({
       next: (data) => {
         if (data.token) {
@@ -82,8 +92,13 @@ export class LoginPage {
     })
   }
 
-  loginWithGoogle() {
-    this.authService.loginWithGoogle();
+  async loginWithGoogle() {
+    try {
+      await this.authService.promptGoogleSignIn();
+    } catch (error) {
+      console.error('Google Sign-In failed to start:', error);
+      alert('Google Sign-In is not available in this browser right now.');
+    }
   }
   
   userSignup() {

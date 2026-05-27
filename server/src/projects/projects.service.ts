@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { Project, ProjectComment, ProjectReply, User } from '@prisma/client';
 import { ConfigService } from '@nestjs/config';
 import jwt from 'jsonwebtoken';
@@ -42,9 +42,24 @@ export class ProjectsService {
       throw new BadRequestException('Title and description required');
     }
 
+    const title = payload.title.trim();
+    const existingProject = await this.prisma.project.findFirst({
+      where: {
+        title: {
+          equals: title,
+          mode: 'insensitive',
+        },
+      },
+      select: { id: true },
+    });
+
+    if (existingProject) {
+      throw new ConflictException('A project with this title already exists');
+    }
+
     const project = await this.prisma.project.create({
       data: {
-        title: payload.title.trim(),
+        title,
         description: payload.description.trim(),
         liveLink: payload.liveLink?.trim() ?? '',
         gitHubLink: payload.gitHubLink?.trim() ?? '',
@@ -58,22 +73,30 @@ export class ProjectsService {
     return { message: 'Project Created Successfully', project: this.mapProject(project) };
   }
 
-  async getAllProjects(search?: string) {
+  async getAllProjects(search?: string, page = 1, limit = 10) {
     const normalizedSearch = search?.trim();
+    const skip = (page - 1) * limit;
+
+    const whereClause: any = normalizedSearch
+      ? {
+          OR: [
+            { title: { contains: normalizedSearch, mode: 'insensitive' } },
+            { description: { contains: normalizedSearch, mode: 'insensitive' } },
+            { liveLink: { contains: normalizedSearch, mode: 'insensitive' } },
+            { gitHubLink: { contains: normalizedSearch, mode: 'insensitive' } },
+            { tags: { has: normalizedSearch } },
+          ],
+        }
+      : undefined;
+
+    // fetch total count for pagination metadata
+    const total = await this.prisma.project.count({ where: whereClause });
 
     const projects = await this.prisma.project.findMany({
-      where: normalizedSearch
-        ? {
-            OR: [
-              { title: { contains: normalizedSearch, mode: 'insensitive' } },
-              { description: { contains: normalizedSearch, mode: 'insensitive' } },
-              { liveLink: { contains: normalizedSearch, mode: 'insensitive' } },
-              { gitHubLink: { contains: normalizedSearch, mode: 'insensitive' } },
-              { tags: { has: normalizedSearch } },
-            ],
-          }
-        : undefined,
+      where: whereClause,
       orderBy: { createdAt: 'desc' },
+      skip,
+      take: limit,
       include: {
         owner: true,
         comments: { include: { user: true, replies: { include: { user: true } }, }, orderBy: { createdAt: 'asc' } },
@@ -81,9 +104,18 @@ export class ProjectsService {
       },
     });
 
+    const totalPages = Math.ceil(total / limit);
+
     return {
-      count: projects.length,
-      projects: projects.map((project) => this.mapProjectSummary(project as ProjectWithRelations)),
+      data: projects.map((project) => this.mapProjectSummary(project as ProjectWithRelations)),
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1,
+      },
     };
   }
 
@@ -216,14 +248,21 @@ export class ProjectsService {
       },
     });
 
-    await this.notificationsService.createNotification({
-      userId: project.ownerId,
-      actorId: user.id,
-      projectId,
-      type: 'comment',
-      message: `${user.name} commented on "${project.title}": "${this.getNotificationPreview(cleanedText)}"`,
-      commentId: createdComment.id,
-    });
+    // Notify the project owner via SSE (no DB persistence for now), but skip notifying the author
+    if (project.ownerId && project.ownerId !== user.id) {
+      this.sseService.publish(`user:${project.ownerId}`, {
+        event: 'toast',
+        data: {
+          type: 'comment',
+          projectId,
+          commentId: createdComment.id,
+          actorId: user.id,
+          actorName: user.name,
+          message: `${user.name} commented on your project "${project.title}"`,
+          preview: this.getNotificationPreview(cleanedText),
+        },
+      });
+    }
 
     return {
       message: 'Comment Added Successfully',
@@ -266,6 +305,12 @@ export class ProjectsService {
     await this.prisma.projectComment.delete({ where: { id: commentId } });
     const comments = await this.getComments(projectId);
 
+    // publish updated comments to project stream so clients update without manual refresh
+    this.sseService.publish(`project:${projectId}`, {
+      event: 'project:comments-updated',
+      data: { projectId, comments },
+    });
+
     return {
       message: 'Comment Deleted Successfully',
       comments,
@@ -302,15 +347,22 @@ export class ProjectsService {
       data: { projectId, commentId, comments },
     });
 
-    if (comment.userId) {
-      await this.notificationsService.createNotification({
-        userId: comment.userId,
-        actorId: user.id,
-        projectId,
-        type: 'reply',
-        message: `${user.name} replied to your comment on "${(await this.prisma.project.findUnique({ where: { id: projectId } }))?.title ?? 'project'}": "${this.getNotificationPreview(cleanedText)}"`,
-        commentId,
-        replyId: createdReply.id,
+
+    // Notify the comment owner via SSE (no DB persistence for now), but skip notifying the replier
+    if (comment.userId && comment.userId !== user.id) {
+      const projectTitle = (await this.prisma.project.findUnique({ where: { id: projectId } }))?.title ?? 'project';
+      this.sseService.publish(`user:${comment.userId}`, {
+        event: 'toast',
+        data: {
+          type: 'reply',
+          projectId,
+          commentId,
+          replyId: createdReply.id,
+          actorId: user.id,
+          actorName: user.name,
+          message: `${user.name} replied to your comment on "${projectTitle}"`,
+          preview: this.getNotificationPreview(cleanedText),
+        },
       });
     }
 
@@ -388,9 +440,15 @@ export class ProjectsService {
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache',
       Connection: 'keep-alive',
+      'X-Accel-Buffering': 'no',
     });
 
+    response.flushHeaders?.();
+    response.write('retry: 5000\n\n');
     response.write(`: connected to project ${projectId}\n\n`);
+    const heartbeat = setInterval(() => {
+      response.write(`: heartbeat ${Date.now()}\n\n`);
+    }, 25_000);
 
     const unsubscribe = this.sseService.subscribe(`project:${projectId}`, (payload) => {
       const eventName = (payload as { event?: string })?.event ?? 'message';
@@ -399,7 +457,10 @@ export class ProjectsService {
       response.write(`data: ${JSON.stringify(data)}\n\n`);
     });
 
-    return unsubscribe;
+    return () => {
+      clearInterval(heartbeat);
+      unsubscribe();
+    };
   }
 
   private projectInclude() {

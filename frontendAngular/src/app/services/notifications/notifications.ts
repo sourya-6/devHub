@@ -1,5 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, NgZone, computed, signal } from '@angular/core';
+import { Router } from '@angular/router';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
@@ -42,7 +43,7 @@ export class NotificationService {
   unreadCount = computed(() => this.notifications().filter((notification) => !notification.read).length);
   loading = signal(false);
 
-  constructor(private http: HttpClient, private zone: NgZone) {}
+  constructor(private http: HttpClient, private zone: NgZone, private router: Router) {}
 
   loadNotifications(): Observable<NotificationsResponse> {
     const token = localStorage.getItem('token');
@@ -114,6 +115,15 @@ export class NotificationService {
       });
     });
 
+    // listen for lightweight toast events (SSE only, no DB persistence)
+    this.eventSource.addEventListener('toast', (event: any) => {
+      const parsed = event?.data ? JSON.parse(event.data) : null;
+
+      this.zone.run(() => {
+        this.showToast(parsed ?? 'Notification');
+      });
+    });
+
     this.eventSource.onerror = (error) => {
       console.error('Notification SSE error', error);
     };
@@ -151,5 +161,68 @@ export class NotificationService {
         Authorization: `Bearer ${token}`,
       },
     });
+  }
+
+  private showToast(payload: string | { message?: string; projectId?: string } , duration = 4000) {
+    try {
+      const containerId = 'app-toast-container';
+      let container = document.getElementById(containerId);
+      if (!container) {
+        container = document.createElement('div');
+        container.id = containerId;
+        Object.assign(container.style, {
+          position: 'fixed',
+          right: '16px',
+          bottom: '16px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '8px',
+          zIndex: '99999',
+          pointerEvents: 'none',
+        });
+        document.body.appendChild(container);
+      }
+
+      const toast = document.createElement('div');
+      const text = typeof payload === 'string' ? payload : payload?.message ?? 'Notification';
+      toast.textContent = text;
+      Object.assign(toast.style, {
+        background: 'rgba(0,0,0,0.85)',
+        color: '#fff',
+        padding: '10px 14px',
+        borderRadius: '8px',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+        maxWidth: '320px',
+        pointerEvents: 'auto',
+        opacity: '1',
+        transition: 'opacity 300ms ease',
+      });
+
+      // if payload contains a projectId, make toast clickable and navigate
+      const projectId = typeof payload === 'object' && payload?.projectId ? String(payload.projectId) : null;
+      if (projectId) {
+        toast.style.cursor = 'pointer';
+        toast.addEventListener('click', () => {
+          try {
+            this.zone.run(() => {
+              this.router.navigate([`/project/${projectId}`]);
+            });
+          } catch (e) {
+            console.error('Toast navigation failed', e);
+          }
+        });
+      }
+
+      container.appendChild(toast);
+
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => {
+          try { container?.removeChild(toast); } catch {}
+        }, 300);
+      }, duration);
+    } catch (err) {
+      console.error('showToast failed', err);
+    }
   }
 }

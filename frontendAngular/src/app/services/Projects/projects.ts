@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { shareReplay, tap } from 'rxjs/operators';
-import { addProjectTemplate, projectTemplate, realProjectTemplate } from './projectTemplate';
+import { addProjectTemplate, projectTemplate, realProjectTemplate, PaginatedProjectsResponse } from './projectTemplate';
 import { environment } from '../../../environments/environment';
 
 @Injectable({
@@ -22,6 +22,14 @@ export class Projects {
     }
 
     return this.projectsCache$;
+  }
+
+  getAllProjectsPaginated(page: number = 1, limit: number = 10, search?: string): Observable<PaginatedProjectsResponse> {
+    let url = `${this.url}/project?page=${page}&limit=${limit}`;
+    if (search) {
+      url += `&search=${encodeURIComponent(search)}`;
+    }
+    return this.http.get<PaginatedProjectsResponse>(url);
   }
 
   clearProjectsCache() {

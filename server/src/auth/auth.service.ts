@@ -16,10 +16,16 @@ type SafeUser = Pick<User, 'id' | 'name' | 'email' | 'username' | 'avatar' | 'bi
 
 @Injectable()
 export class AuthService {
+  private readonly googleClientId: string;
+  private readonly googleClientSecret: string;
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
-  ) {}
+  ) {
+    this.googleClientId = this.configService.get<string>('GOOGLE_CLIENT_ID', '');
+    this.googleClientSecret = this.configService.get<string>('GOOGLE_CLIENT_SECRET', '');
+  }
 
   async register(dto: RegisterDto) {
     const name = dto.name.trim();

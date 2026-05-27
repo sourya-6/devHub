@@ -1,10 +1,13 @@
-import { Controller, Delete, Get, Param, Patch, Post, Req, Res, Body, UseGuards, UseInterceptors, UploadedFile, BadRequestException } from '@nestjs/common';
+import { Controller, Delete, Get, Param, Patch, Post, Req, Res, Body, UseGuards, UseInterceptors, UploadedFile, BadRequestException, Query } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Request, Response } from 'express';
 import { JwtGuard } from '../common/auth/jwt.guard';
 import { multerImageOptions } from '../common/upload/image-upload';
+import { GetProjectsQueryDto, PaginatedProjectsResponseDto } from './dto/projects.dto';
 import { ProjectsService } from './projects.service';
 
+@ApiTags('Projects')
 @Controller('project')
 export class ProjectsController {
   constructor(private readonly projectsService: ProjectsService) {}
@@ -12,7 +15,11 @@ export class ProjectsController {
   @Post()
   @UseGuards(JwtGuard)
   @UseInterceptors(FileInterceptor('image', multerImageOptions))
-  async createProject(@Req() req: Request, @UploadedFile() file?: Express.Multer.File, @Body() body: Record<string, string>) {
+  async createProject(
+    @Req() req: Request,
+    @Body() body: Record<string, string>,
+    @UploadedFile() file?: Express.Multer.File
+  ) {
     if (!req.user?.id) {
       throw new BadRequestException('Unauthorized');
     }
@@ -35,9 +42,13 @@ export class ProjectsController {
   }
 
   @Get()
-  async getAllProjects(@Req() req: Request) {
-    const search = typeof req.query.search === 'string' ? req.query.search : undefined;
-    return this.projectsService.getAllProjects(search);
+  @ApiOperation({ summary: 'Get paginated projects' })
+  @ApiOkResponse({
+    description: 'Paginated projects result.',
+    type: PaginatedProjectsResponseDto,
+  })
+  async getAllProjects(@Query() query: GetProjectsQueryDto): Promise<PaginatedProjectsResponseDto> {
+    return this.projectsService.getAllProjects(query.search, query.page, query.limit);
   }
 
   @Get(':id')

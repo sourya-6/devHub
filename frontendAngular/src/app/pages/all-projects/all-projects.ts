@@ -1,14 +1,23 @@
 
 
-import { Component, HostListener, OnInit } from '@angular/core';
+import { Component, DestroyRef, HostListener, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import {
+  ActivatedRoute,
+  NavigationCancel,
+  NavigationEnd,
+  NavigationError,
+  NavigationStart,
+  Router,
+  RouterLink
+} from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ScrollingModule } from '@angular/cdk/scrolling';
 
 import {
   projectTemplate,
-  realProjectTemplate
+  PaginatedProjectsResponse
 } from '../../services/Projects/projectTemplate';
 
 @Component({
@@ -19,6 +28,7 @@ import {
   styleUrl: './all-projects.css',
 })
 export class AllProjects implements OnInit {
+  private readonly destroyRef = inject(DestroyRef);
   private readonly onboardingStorageKey = 'devhub.onboarding.complete';
 
   projects: projectTemplate[] = [];
@@ -26,18 +36,83 @@ export class AllProjects implements OnInit {
   showOnboarding = false;
 
   loading:boolean = true;
+  pageLoading = false;
+  errorMessage = '';
   itemsPerRow = 3;
 
-  constructor(private route:ActivatedRoute) {}
+  // Pagination
+  currentPage = 1;
+  pageSize = 12;
+  totalPages = 1;
+  paginationData: PaginatedProjectsResponse | null = null;
+
+  constructor(
+    private route: ActivatedRoute,
+    private router: Router
+  ) {}
 
   ngOnInit()  {
-    const data:realProjectTemplate = this.route.snapshot.data['projectsData'];
-    console.log(data);
-    
-    this.projects = data.projects;
     this.updateItemsPerRow();
-    this.loading = false;
     this.showOnboarding = localStorage.getItem(this.onboardingStorageKey) !== 'true';
+
+    this.router.events.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((event) => {
+      if (event instanceof NavigationStart && this.isDashboardUrl(event.url)) {
+        this.pageLoading = !this.loading;
+        this.errorMessage = '';
+      }
+
+      if (
+        event instanceof NavigationEnd ||
+        event instanceof NavigationCancel ||
+        event instanceof NavigationError
+      ) {
+        this.pageLoading = false;
+      }
+
+      if (event instanceof NavigationError) {
+        this.errorMessage = 'Projects could not be loaded.';
+      }
+    });
+
+    this.route.data.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((data) => {
+      const resolvedProjects = data['projectsData'] as PaginatedProjectsResponse | undefined;
+      if (!resolvedProjects) {
+        this.loading = false;
+        this.pageLoading = false;
+        this.errorMessage = 'Projects could not be loaded.';
+        return;
+      }
+
+      this.applyProjectsResponse(resolvedProjects);
+      this.syncSearchFromUrl();
+      this.loading = false;
+      this.pageLoading = false;
+      this.errorMessage = '';
+    });
+  }
+
+  onSearch() {
+    this.goToPage(1);
+  }
+
+  nextPage() {
+    if (this.canNextPage()) {
+      this.goToPage(this.currentPage + 1);
+    }
+  }
+
+  prevPage() {
+    if (this.canPrevPage()) {
+      this.goToPage(this.currentPage - 1);
+    }
+  }
+
+  canNextPage(): boolean {
+    return !this.pageLoading && (this.paginationData?.pagination.hasNextPage ?? false);
+  }
+
+  canPrevPage(): boolean {
+    return !this.pageLoading && (this.paginationData?.pagination.hasPrevPage ?? false);
   }
 
   @HostListener('window:resize')
@@ -86,6 +161,41 @@ export class AllProjects implements OnInit {
     } else {
       this.itemsPerRow = 3;
     }
+  }
+
+  private goToPage(page: number) {
+    this.pageLoading = true;
+    const search = this.searchQuery.trim();
+
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: {
+        page,
+        search: search || null,
+      },
+    }).then((navigated) => {
+      if (!navigated) {
+        this.pageLoading = false;
+      }
+    }).catch(() => {
+      this.pageLoading = false;
+      this.errorMessage = 'Projects could not be loaded.';
+    });
+  }
+
+  private syncSearchFromUrl() {
+    this.searchQuery = this.route.snapshot.queryParamMap.get('search') || '';
+  }
+
+  private isDashboardUrl(url: string): boolean {
+    return url.startsWith('/dashboard') || url.startsWith('/dashbord');
+  }
+
+  private applyProjectsResponse(response: PaginatedProjectsResponse) {
+    this.paginationData = response;
+    this.projects = response.data || [];
+    this.currentPage = response.pagination?.page || 1;
+    this.totalPages = response.pagination?.totalPages || 1;
   }
 
   dismissOnboarding() {

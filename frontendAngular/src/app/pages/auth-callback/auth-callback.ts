@@ -21,9 +21,9 @@ export class AuthCallback implements OnInit {
 
       if (credential) {
         try {
-          const response = await this.authService.loginWithGoogle(credential);
+          const response = await this.authService.loginWithGoogleToken(credential);
           if (response?.token) {
-            await this.router.navigate(['/all-projects']);
+            await this.router.navigate(['/dashboard']);
             return;
           }
         } catch (error) {

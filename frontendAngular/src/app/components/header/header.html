@@ -11,54 +11,6 @@
 		<nav class="header-nav flex items-center gap-2 sm:gap-3">
 			<app-theme-toggle></app-theme-toggle>
 
-			<div *ngIf="isLoggedIn()" class="relative">
-				<button
-					type="button"
-					(click)="toggleNotifications()"
-					class="notification-button"
-					aria-label="Open notifications"
-				>
-					<span>🔔</span>
-					<span class="notification-badge">{{ unreadCount() }}</span>
-				</button>
-
-				@if (showNotifications()) {
-					<div class="notification-panel">
-						<div class="notification-panel__header">
-							<div>
-								<p class="notification-panel__eyebrow">Activity</p>
-								<h2>Notifications</h2>
-							</div>
-							<button type="button" class="notification-panel__mark-all" (click)="markAllRead()">
-								Mark all read
-							</button>
-						</div>
-
-						@if (notifications().length === 0) {
-							<p class="notification-panel__empty">No notifications yet.</p>
-						} @else {
-							<div class="notification-list">
-								@for (notification of notifications(); track notification._id) {
-									<button
-										type="button"
-										(click)="openNotification(notification)"
-										class="notification-item"
-										[ngClass]="{ 'notification-item--unread': !notification.read }"
-									>
-										<img [src]="notification.actor.avatar" [alt]="notification.actor.name" class="notification-item__avatar" />
-										<div class="notification-item__body">
-											<p class="notification-item__message">{{ notification.message }}</p>
-											<p class="notification-item__meta">{{ notification.project.title }}</p>
-										</div>
-										<span class="notification-item__time">{{ notification.createdAt | date:'shortTime' }}</span>
-									</button>
-								}
-							</div>
-						}
-					</div>
-				}
-			</div>
-
 			<a *ngIf="isLoggedIn()" routerLink="/dashbord" class="nav-link rounded-xl px-4 py-2 text-sm font-semibold transition">Dashboard</a>
 			<a *ngIf="isLoggedIn()" routerLink="/add-project" class="nav-link rounded-xl px-4 py-2 text-sm font-semibold transition">Add Project</a>
 			<a *ngIf="!isLoggedIn()" routerLink="/" class="rounded-xl bg-black px-4 py-2 text-sm font-semibold text-white hover:bg-gray-800 transition">Login</a>

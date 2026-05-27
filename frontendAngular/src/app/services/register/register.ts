@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { User } from '../login/user';
 import { environment } from '../../../environments/environment';
+import { NotificationService } from '../notifications/notifications';
 
 export interface RegisterTemplate {
   name: string;
@@ -22,7 +23,10 @@ export interface RegisterResponse {
 })
 export class Register {
   private readonly baseUrl = environment.backendUrl;
-  constructor(private http: HttpClient) { }
+  constructor(
+    private http: HttpClient,
+    private notificationService: NotificationService,
+  ) { }
 
   registerUser(userData: RegisterTemplate): Observable<RegisterResponse> {
     return this.http.post<RegisterResponse>(`${this.baseUrl}/auth/register`, userData, {
@@ -31,6 +35,7 @@ export class Register {
       tap((item) => {
         localStorage.setItem("token", item.token);
         localStorage.setItem("userId", item.user.id);
+        queueMicrotask(() => this.notificationService.connect());
       })
     );
   }

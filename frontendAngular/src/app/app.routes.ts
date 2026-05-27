@@ -20,6 +20,7 @@ export const routes: Routes = [
     path: 'dashboard',
     component: AllProjects,
     resolve: { projectsData: projectResolver },
+    runGuardsAndResolvers: 'paramsOrQueryParamsChange',
     canActivate: [authGuard],
   },
   {

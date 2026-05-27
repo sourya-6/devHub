@@ -21,7 +21,7 @@ export class InputData {
   ngOnInit(){
     const projectData = this.route.snapshot.data['projectData'];
     this.comment = projectData.comments; 
-    this.projectId = projectData._id; 
+    this.projectId = projectData.id; 
     
 
   }

@@ -41,9 +41,23 @@ export interface Reply{
 
 }
 
+export interface PaginationMeta {
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPrevPage: boolean;
+}
+
 export interface realProjectTemplate{
     count:number,
     projects:projectTemplate[]
+}
+
+export interface PaginatedProjectsResponse {
+  data: projectTemplate[];
+  pagination: PaginationMeta;
 }
 
 export interface addProjectTemplate {

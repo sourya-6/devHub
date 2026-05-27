@@ -127,7 +127,7 @@ export class NotificationsService {
     };
   }
 
-  private mapNotification(notification: Awaited<ReturnType<typeof this.prisma.notification.findFirst>> extends infer N ? NonNullable<N> : never) {
+  private mapNotification(notification: any) {
     return {
       id: notification.id,
       userId: notification.userId,
@@ -138,8 +138,8 @@ export class NotificationsService {
       read: notification.read,
       commentId: notification.commentId,
       replyId: notification.replyId,
-      actor: notification.actor,
-      project: notification.project,
+      actor: notification.actor ? { id: notification.actor.id, name: notification.actor.name, username: notification.actor.username, avatar: notification.actor.avatar } : null,
+      project: notification.project ? { id: notification.project.id, title: notification.project.title, image: notification.project.image } : null,
       createdAt: notification.createdAt,
       updatedAt: notification.updatedAt,
     };

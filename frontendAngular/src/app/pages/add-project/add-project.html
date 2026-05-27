@@ -15,6 +15,12 @@
     </div>
 
     <div class="grid gap-6 md:grid-cols-2">
+      @if (errorMessage) {
+        <div class="md:col-span-2 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+          {{ errorMessage }}
+        </div>
+      }
+
       <div class="md:col-span-2">
         <label class="block text-sm font-semibold text-gray-700 mb-2">Title</label>
         <input
@@ -85,6 +91,7 @@
         Cancel
       </a>
       <button
+        type="button"
         (click)="createProject()"
         class="px-6 py-3 rounded-xl bg-black text-white font-semibold hover:bg-gray-800 transition duration-300"
       >

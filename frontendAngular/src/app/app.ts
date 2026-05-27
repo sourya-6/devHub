@@ -11,11 +11,12 @@ import { filter } from 'rxjs';
 import { Header } from './components/header/header';
 import { Footer } from './components/footer/footer';
 import { ThemeService } from './services/theme/theme.service';
+import { ToastContainer } from './components/toast-container/toast-container';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, Header, Footer],
+  imports: [RouterOutlet, Header, Footer, ToastContainer],
   templateUrl: './app.html',
   styleUrl: './app.css'
 })

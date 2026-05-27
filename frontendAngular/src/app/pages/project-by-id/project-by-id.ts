@@ -1,6 +1,5 @@
 import { Component } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import {
   projectTemplate,
 
@@ -13,7 +12,7 @@ import { SocketService } from '../../services/socket';
 
 @Component({
   selector: 'app-project-by-id',
-  imports: [CommonModule, Comment],
+  imports: [CommonModule, RouterLink, Comment],
   templateUrl: './project-by-id.html',
   styleUrl: './project-by-id.css',
 })
@@ -47,19 +46,19 @@ export class ProjectById {
   }
 
   ngOnDestroy() {
-    if (this.project?._id) {
+    if (this.project?.id) {
       this.socketService.disconnect();
       this.sseConnected = false;
     }
   }
 
   setupSocket() {
-    if (!this.project._id || this.sseConnected) return;
+    if (!this.project.id || this.sseConnected) return;
 
-    this.socketService.connectToProject(this.project._id);
+    this.socketService.connectToProject(this.project.id);
     this.sseConnected = true;
     this.socketService.onLikesUpdated((data: any) => {
-      if (data.projectId === this.project._id) {
+      if (data.projectId === this.project.id) {
         this.likeCount = typeof data.likeCount === 'number' ? data.likeCount : this.likeCount;
         this.project.likeCount = this.likeCount;
       }
@@ -88,7 +87,7 @@ export class ProjectById {
       return;
     }
 
-    const projectId = this.project._id;
+    const projectId = this.project.id;
     if (!projectId) {
       console.error('Project ID not found');
       return;

@@ -21,7 +21,7 @@
   }
 
   <!-- Comments --> 
-  @for (comment of getValidComments(); track comment._id) {
+  @for (comment of getValidComments(); track comment.id) {
 
     <div class="border border-gray-200 rounded-2xl p-5 mb-6 mt-6">
 
@@ -54,35 +54,35 @@
       </div>
 
       <!-- Comment Text Display -->
-      @if (editingCommentId() !== comment._id!) {
+      @if (editingCommentId() !== comment.id!) {
         <p class="text-gray-700 leading-relaxed mb-4"> 
           {{ comment.text }} 
         </p>
       }
 
       <!-- Comment Edit Input -->
-      @if (editingCommentId() === comment._id!) {
+      @if (editingCommentId() === comment.id!) {
         <div class="mb-4">
           <textarea
-            [(ngModel)]="editCommentText()[comment._id!]"
+            [(ngModel)]="editCommentText()[comment.id!]"
             class="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-black transition-all duration-300 resize-none"
             rows="3"
           ></textarea>
           <div class="flex gap-2 mt-2 items-center">
             <button
-              (click)="updateComment(comment._id!)"
-              [disabled]="loadingComments()[comment._id!]"
+              (click)="updateComment(comment.id!)"
+              [disabled]="loadingComments()[comment.id!]"
               class="px-4 py-2 bg-black text-white rounded-lg font-semibold hover:bg-gray-800 transition duration-300 disabled:opacity-60"
             >
               Save
             </button>
             <button
-              (click)="toggleEditComment(comment._id!)"
+              (click)="toggleEditComment(comment.id!)"
               class="px-4 py-2 bg-gray-300 text-gray-800 rounded-lg font-semibold hover:bg-gray-400 transition duration-300"
             >
               Cancel
             </button>
-            @if (loadingComments()[comment._id!]) {
+            @if (loadingComments()[comment.id!]) {
               <div class="reply-loader">
                 <svg class="reply-loader__svg" viewBox="0 0 50 50" aria-label="Loading">
                   <circle class="reply-loader__track" cx="25" cy="25" r="20"></circle>
@@ -96,29 +96,29 @@
       }
 
       <!-- Comment Actions -->
-      @if (editingCommentId() !== comment._id! && isCurrentUserComment(comment.user._id)) {
+      @if (editingCommentId() !== comment.id! && isCurrentUserComment(comment.user.id)) {
         <div class="flex gap-3 mb-4">
           <button 
-            (click)="toggleReplyInput(comment._id!)"
+            (click)="toggleReplyInput(comment.id!)"
             class="text-sm px-3 py-1 text-black border border-gray-300 rounded-lg hover:bg-gray-100 transition duration-300"
           >
-            {{ expandedReplies()['reply-' + comment._id!] ? 'Cancel' : '↪️ Reply' }}
+            {{ expandedReplies()['reply-' + comment.id!] ? 'Cancel' : '↪️ Reply' }}
           </button>
           <button
-            (click)="toggleEditComment(comment._id!)"
-            [disabled]="loadingComments()[comment._id!]"
+            (click)="toggleEditComment(comment.id!)"
+            [disabled]="loadingComments()[comment.id!]"
             class="text-xs px-2 py-1 text-blue-600 hover:bg-blue-50 rounded transition duration-300 disabled:opacity-60"
           >
             ✏️ Edit
           </button>
           <button
-            (click)="deleteComment(comment._id!)"
-            [disabled]="loadingComments()[comment._id!]"
+            (click)="deleteComment(comment.id!)"
+            [disabled]="loadingComments()[comment.id!]"
             class="text-xs px-2 py-1 text-red-600 hover:bg-red-50 rounded transition duration-300 disabled:opacity-60"
           >
             🗑️ Delete
           </button>
-          @if (loadingComments()[comment._id!]) {
+          @if (loadingComments()[comment.id!]) {
             <div class="reply-loader">
               <svg class="reply-loader__svg" viewBox="0 0 50 50" aria-label="Loading">
                 <circle class="reply-loader__track" cx="25" cy="25" r="20"></circle>
@@ -131,24 +131,24 @@
       }
 
       <!-- Reply Button (for non-owners) -->
-      @if (editingCommentId() !== comment._id! && !isCurrentUserComment(comment.user._id)) {
+      @if (editingCommentId() !== comment.id! && !isCurrentUserComment(comment.user.id)) {
         <div class="flex gap-3 mb-4">
           <button 
-            (click)="toggleReplyInput(comment._id!)"
+            (click)="toggleReplyInput(comment.id!)"
             class="text-sm px-3 py-1 text-black border border-gray-300 rounded-lg hover:bg-gray-100 transition duration-300"
           >
-            {{ expandedReplies()['reply-' + comment._id!] ? 'Cancel' : '↪️ Reply' }}
+            {{ expandedReplies()['reply-' + comment.id!] ? 'Cancel' : '↪️ Reply' }}
           </button>
         </div>
       }
 
       <!-- Reply Input -->
-      @if (expandedReplies()['reply-' + comment._id!]) {
+      @if (expandedReplies()['reply-' + comment.id!]) {
 
         <div class="mb-4 ml-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
 
           <textarea
-            [(ngModel)]="replyTexts()['reply-' + comment._id!]"
+            [(ngModel)]="replyTexts()['reply-' + comment.id!]"
             placeholder="Write a reply..."
             class="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-black transition-all duration-300 resize-none"
             rows="3"
@@ -157,21 +157,21 @@
           <div class="flex gap-2 mt-2 items-center">
 
             <button
-              (click)="addReply(comment._id)"
-              [disabled]="loadingReplies()['reply-' + comment._id!]"
+              (click)="addReply(comment.id)"
+              [disabled]="loadingReplies()['reply-' + comment.id!]"
               class="px-4 py-2 bg-black text-white rounded-lg font-semibold hover:bg-gray-800 transition duration-300 disabled:opacity-60"
             >
               Post Reply
             </button>
 
             <button
-              (click)="toggleReplyInput(comment._id)"
+              (click)="toggleReplyInput(comment.id)"
               class="px-4 py-2 bg-gray-300 text-gray-800 rounded-lg font-semibold hover:bg-gray-400 transition duration-300"
             >
               Cancel
             </button>
 
-            @if (loadingReplies()['reply-' + comment._id!]) {
+            @if (loadingReplies()['reply-' + comment.id!]) {
               <div class="reply-loader">
                 <svg class="reply-loader__svg" viewBox="0 0 50 50" aria-label="Loading">
                   <circle class="reply-loader__track" cx="25" cy="25" r="20"></circle>
@@ -196,7 +196,7 @@
             {{ comment.replies.length === 1 ? 'Reply' : 'Replies' }}
           </h4> 
 
-          @for (reply of getValidReplies(comment); track reply._id) {
+          @for (reply of getValidReplies(comment); track reply.id) {
 
             <div class="bg-gray-50 rounded-xl p-4 mb-4 border border-gray-200">
 
@@ -229,8 +229,8 @@
 
               <!-- Reply Text Display -->
               @if (
-                comment._id &&
-                editingReplyId()[comment._id] !== reply._id
+                comment.id &&
+                editingReplyId()[comment.id] !== reply.id
               ) {
 
                 <p class="text-gray-700 mb-2">
@@ -240,14 +240,14 @@
 
               <!-- Reply Edit Input -->
               @if (
-                comment._id &&
-                editingReplyId()[comment._id] === reply._id
+                comment.id &&
+                editingReplyId()[comment.id] === reply.id
               ) {
 
                 <div class="mb-2">
 
                   <textarea
-                    [(ngModel)]="editReplyTexts()['edit-' + comment._id + '-' + reply._id!]"
+                    [(ngModel)]="editReplyTexts()['edit-' + comment.id + '-' + reply.id!]"
                     class="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-black transition-all duration-300 resize-none"
                     rows="2"
                   ></textarea>
@@ -255,21 +255,21 @@
                   <div class="flex gap-2 mt-2 items-center">
 
                     <button
-                      (click)="updateReply(comment._id, reply._id)"
-                      [disabled]="loadingReplies()['reply-' + reply._id]"
+                      (click)="updateReply(comment.id, reply.id)"
+                      [disabled]="loadingReplies()['reply-' + reply.id]"
                       class="px-3 py-1 bg-black text-white rounded text-sm hover:bg-gray-800 transition duration-300 disabled:opacity-60"
                     >
                       Save
                     </button>
 
                     <button
-                      (click)="toggleEditReply(comment._id, reply._id)"
+                      (click)="toggleEditReply(comment.id, reply.id)"
                       class="px-3 py-1 bg-gray-400 text-white rounded text-sm hover:bg-gray-500 transition duration-300"
                     >
                       Cancel
                     </button>
 
-                    @if (loadingReplies()['reply-' + reply._id]) {
+                    @if (loadingReplies()['reply-' + reply.id]) {
                       <div class="reply-loader">
                         <svg class="reply-loader__svg" viewBox="0 0 50 50" aria-label="Loading">
                           <circle class="reply-loader__track" cx="25" cy="25" r="20"></circle>
@@ -286,30 +286,30 @@
 
               <!-- Reply Actions -->
               @if (
-                comment._id &&
-                isCurrentUserComment(reply.user._id) &&
-                editingReplyId()[comment._id] !== reply._id
+                comment.id &&
+                isCurrentUserComment(reply.user.id) &&
+                editingReplyId()[comment.id] !== reply.id
               ) {
 
                 <div class="flex gap-2 mt-2 items-center">
 
                   <button
-                    (click)="toggleEditReply(comment._id, reply._id)"
-                    [disabled]="loadingReplies()['reply-' + reply._id]"
+                    (click)="toggleEditReply(comment.id, reply.id)"
+                    [disabled]="loadingReplies()['reply-' + reply.id]"
                     class="text-xs px-2 py-1 text-blue-600 hover:bg-blue-50 rounded transition duration-300 disabled:opacity-60"
                   >
                     ✏️ Edit
                   </button>
 
                   <button
-                    (click)="deleteReply(comment._id, reply._id)"
-                    [disabled]="loadingReplies()['reply-' + reply._id]"
+                    (click)="deleteReply(comment.id, reply.id)"
+                    [disabled]="loadingReplies()['reply-' + reply.id]"
                     class="text-xs px-2 py-1 text-red-600 hover:bg-red-50 rounded transition duration-300 disabled:opacity-60"
                   >
                     🗑️ Delete
                   </button>
 
-                  @if (loadingReplies()['reply-' + reply._id]) {
+                  @if (loadingReplies()['reply-' + reply.id]) {
                     <div class="reply-loader">
                       <svg class="reply-loader__svg" viewBox="0 0 50 50" aria-label="Loading">
                         <circle class="reply-loader__track" cx="25" cy="25" r="20"></circle>

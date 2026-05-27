@@ -11,9 +11,10 @@ import { FormsModule } from '@angular/forms';
 
 @Component({
   selector: 'app-comment',
+  standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './comment.html',
-  styleUrl: './comment.css',
+  styleUrls: ['./comment.css'],
 })
 export class Comment implements OnInit, OnDestroy {
   project!:projectTemplate
@@ -56,30 +57,30 @@ export class Comment implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     
-    if (this.project._id) {
+    if (this.project.id) {
       this.socketService.disconnect();
       this.sseConnected = false;
     }
   }
 
   setupSocket() {
-    if (!this.project._id|| this.sseConnected) return;
+    if (!this.project.id|| this.sseConnected) return;
 
     // Connect to SSE stream for this project
-    this.socketService.connectToProject(this.project._id);
+    this.socketService.connectToProject(this.project.id);
     this.sseConnected = true;
     
     // Listen for comment updates
     this.socketService.onCommentsUpdated((data: any) => {
       console.log('Comments updated:', data);
-      if (data.projectId === this.project._id) {
+      if (data.projectId === this.project.id) {
         this.comments.set([...(data.comments || [])]);
         this.loadingReplies.set({});
       }
     });
 
     this.socketService.onRepliesUpdated((data: any) => {
-      if (data.projectId === this.project._id) {
+      if (data.projectId === this.project.id) {
         const comments = data.comments || [];
         this.comments.set([...comments]);
         this.loadingReplies.set({});
@@ -87,7 +88,7 @@ export class Comment implements OnInit, OnDestroy {
     });
 
     this.socketService.onLikesUpdated((data: any) => {
-      if (data.projectId === this.project._id) {
+      if (data.projectId === this.project.id) {
         this.likeCount = typeof data.likeCount === 'number' ? data.likeCount : this.likeCount;
         this.project.likeCount = this.likeCount;
       }
@@ -96,12 +97,12 @@ export class Comment implements OnInit, OnDestroy {
 
   
   getValidComments() {
-    return this.comments().filter(c => c._id);
+    return this.comments().filter(c => c.id);
   }
 
  
   getValidReplies(comment: any) {
-    return (comment.replies || []).filter((r: any) => r._id);
+    return (comment.replies || []).filter((r: any) => r.id);
   }
 
   async addComment(){
@@ -117,7 +118,7 @@ export class Comment implements OnInit, OnDestroy {
     
     // Listen for the actual comment object and prepend it instantly
     componentRef.instance.commentAdded.subscribe((newComment: any) => {
-      if (newComment && newComment._id) {
+      if (newComment && newComment.id) {
         // Prepend new comment to the list for instant UI update
         this.comments.update((current) => [newComment, ...current]);
       }
@@ -158,11 +159,11 @@ export class Comment implements OnInit, OnDestroy {
     }
 
     // Optimistic update: add reply immediately
-    const comment = this.comments().find(c => c._id === commentId);
+    const comment = this.comments().find(c => c.id === commentId);
     if (comment) {
       comment.replies.push({
-        _id: 'temp-' + Date.now(),
-        user: { _id: this.currentUserId } as any,
+        id: 'temp-' + Date.now(),
+        user: { id: this.currentUserId } as any,
         text: replyText,
         createdAt: new Date()
       });
@@ -173,7 +174,7 @@ export class Comment implements OnInit, OnDestroy {
     this.loadingReplies.set({ ...this.loadingReplies(), [key]: true });
     const startTime = Date.now();
 
-    this.projectService.addReply(this.project._id, commentId, replyText).subscribe({
+    this.projectService.addReply(this.project.id, commentId, replyText).subscribe({
       next: (response: any) => {
         console.log('Reply added:', response);
         // Ensure minimum loading duration (300ms)
@@ -182,7 +183,7 @@ export class Comment implements OnInit, OnDestroy {
 
         setTimeout(() => {
           // Update the comment with the new reply from server when available
-          const comment = this.comments().find(c => c._id === commentId);
+          const comment = this.comments().find(c => c.id === commentId);
           const serverReplies = response?.comment?.replies;
 
           if (comment && Array.isArray(serverReplies)) {
@@ -200,7 +201,7 @@ export class Comment implements OnInit, OnDestroy {
         alert('Failed to add reply');
         // Revert optimistic update on error
         if (comment) {
-          comment.replies = comment.replies.filter(r => !r._id?.startsWith('temp-'));
+          comment.replies = comment.replies.filter(r => !r.id?.startsWith('temp-'));
           this.comments.set([...this.comments()]);
         }
         // Ensure minimum loading duration (300ms)
@@ -228,9 +229,9 @@ export class Comment implements OnInit, OnDestroy {
     } else {
       this.editingReplyId.set({ ...currentEditing, [commentId]: replyId });
       // Find and populate the reply text for editing
-      const comment = this.comments().find(c => c._id === commentId);
+      const comment = this.comments().find(c => c.id === commentId);
       if (comment) {
-        const reply = comment.replies.find(r => r._id === replyId);
+        const reply = comment.replies.find(r => r.id === replyId);
         if (reply) {
           this.editReplyTexts.set({ ...currentTexts, [key]: reply.text });
         }
@@ -258,8 +259,8 @@ export class Comment implements OnInit, OnDestroy {
     }
 
     // Optimistic update: update reply immediately
-    const comment = this.comments().find(c => c._id === commentId);
-    const reply = comment?.replies.find(r => r._id === replyId);
+    const comment = this.comments().find(c => c.id === commentId);
+    const reply = comment?.replies.find(r => r.id === replyId);
     const originalText = reply?.text;
     if (reply) {
       reply.text = updatedText;
@@ -271,7 +272,7 @@ export class Comment implements OnInit, OnDestroy {
     this.loadingReplies.set({ ...this.loadingReplies(), [loadingKey]: true });
     const startTime = Date.now();
 
-    this.projectService.editReply(this.project._id, commentId, replyId, updatedText).subscribe({
+    this.projectService.editReply(this.project.id, commentId, replyId, updatedText).subscribe({
       next: (response: any) => {
         console.log('Reply updated:', response);
         // Ensure minimum loading duration (300ms)
@@ -324,10 +325,10 @@ export class Comment implements OnInit, OnDestroy {
     }
 
     // Optimistic update: remove reply immediately
-    const comment = this.comments().find(c => c._id === commentId);
-    const deletedReply = comment?.replies.find(r => r._id === replyId);
+    const comment = this.comments().find(c => c.id === commentId);
+    const deletedReply = comment?.replies.find(r => r.id === replyId);
     if (comment) {
-      comment.replies = comment.replies.filter(r => r._id !== replyId);
+      comment.replies = comment.replies.filter(r => r.id !== replyId);
       this.comments.set([...this.comments()]);
     }
 
@@ -336,7 +337,7 @@ export class Comment implements OnInit, OnDestroy {
     this.loadingReplies.set({ ...this.loadingReplies(), [loadingKey]: true });
     const startTime = Date.now();
 
-    this.projectService.deleteReply(this.project._id, commentId, replyId).subscribe({
+    this.projectService.deleteReply(this.project.id, commentId, replyId).subscribe({
       next: (response: any) => {
         console.log('Reply deleted:', response);
         // Ensure minimum loading duration (300ms)
@@ -379,7 +380,7 @@ export class Comment implements OnInit, OnDestroy {
       this.editCommentText.set(nextTexts);
     } else {
       this.editingCommentId.set(commentId);
-      const comment = this.comments().find(c => c._id === commentId);
+      const comment = this.comments().find(c => c.id === commentId);
       if (comment) {
         this.editCommentText.set({ ...currentTexts, [commentId]: comment.text });
       }
@@ -404,7 +405,7 @@ export class Comment implements OnInit, OnDestroy {
       return;
     }
 
-    const comment = this.comments().find(c => c._id === commentId);
+    const comment = this.comments().find(c => c.id === commentId);
     const originalText = comment?.text;
     if (comment) {
       comment.text = updatedText;
@@ -414,7 +415,7 @@ export class Comment implements OnInit, OnDestroy {
     this.loadingComments.set({ ...this.loadingComments(), [commentId]: true });
     const startTime = Date.now();
 
-    this.projectService.editComment(this.project._id, commentId, updatedText).subscribe({
+    this.projectService.editComment(this.project.id, commentId, updatedText).subscribe({
       next: (response: any) => {
         const elapsed = Date.now() - startTime;
         const delay = Math.max(0, 300 - elapsed);
@@ -462,12 +463,12 @@ export class Comment implements OnInit, OnDestroy {
 
     const originalComments = [...this.comments()];
     
-    this.comments.set(this.comments().filter(c => c._id !== commentId));
+    this.comments.set(this.comments().filter(c => c.id !== commentId));
 
     this.loadingComments.set({ ...this.loadingComments(), [commentId]: true });
     const startTime = Date.now();
 
-    this.projectService.deleteComment(this.project._id, commentId).subscribe({
+    this.projectService.deleteComment(this.project.id, commentId).subscribe({
       next: (response: any) => {
         const elapsed = Date.now() - startTime;
         const delay = Math.max(0, 300 - elapsed);
