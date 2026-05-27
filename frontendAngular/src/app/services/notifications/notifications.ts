@@ -4,16 +4,16 @@ import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
 export interface AppNotification {
-  _id: string;
+  id: string;
   user: string;
   actor: {
-    _id: string;
+    id: string;
     name: string;
     username: string;
     avatar: string;
   };
   project: {
-    _id: string;
+    id: string;
     title: string;
     image?: string;
   };
@@ -105,7 +105,7 @@ export class NotificationService {
       const parsed = event?.data ? JSON.parse(event.data) : null;
       const notification = parsed?.notification as AppNotification | undefined;
 
-      if (!notification?._id) {
+      if (!notification?.id) {
         return;
       }
 

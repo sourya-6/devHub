@@ -1,5 +1,5 @@
 export interface projectTemplate{
-    _id:string,
+    id:string,
     title:string,
     description:string,
     image?:string,
@@ -14,9 +14,9 @@ export interface projectTemplate{
 }
 
 export interface Comment{
-_id?:string,
+id?:string,
 user:{
-  _id:string;
+  id:string;
   name:string;
   username:string;
   avatar:string;
@@ -28,9 +28,9 @@ user:{
 
 
 export interface Reply{ 
-    _id?:string,
+    id?:string,
     user:{
-    _id:string;
+    id:string;
   name:string;
   username:string;
   avatar:string;

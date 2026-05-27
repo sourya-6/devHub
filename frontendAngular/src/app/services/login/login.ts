@@ -18,7 +18,7 @@ export class Login {
     }).pipe(
       tap((item) => {
         localStorage.setItem("token",item.token);
-        localStorage.setItem("userId", item.user._id);
+        localStorage.setItem("userId", item.user.id);
       })
     );
   }
